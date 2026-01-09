@@ -1,0 +1,14 @@
+import React from 'react'
+
+const ProfilePage = async ({ params }) => {
+  const { username } = await params;
+  // console.log("Profile page for user:", username);
+
+  return (
+    <div className='w-full bg-gray-50 dark:bg-neutral-950 min-h-screen flex flex-col justify-center items-center text-center px-6 py-20'>
+      <h1 className='text-4xl font-bold max-w-3xl text-gray-900 dark:text-white'>Profile Page of {username}</h1>
+    </div>
+  )
+}
+
+export default ProfilePage
