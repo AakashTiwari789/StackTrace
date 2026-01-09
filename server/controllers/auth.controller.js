@@ -8,6 +8,12 @@ import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import { createSession } from "../services/auth.service.js";
 
+const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+};
+
 export const registerUser = asyncHandler(async (req, res) => {
     let { username, email, password } = req.body;
 
@@ -37,8 +43,8 @@ export const registerUser = asyncHandler(async (req, res) => {
     }
 
     res
-        .cookie("accessToken", accessToken, { httpOnly: true, secure: true })
-        .cookie("refreshToken", refreshToken, { httpOnly: true, secure: true })
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
         .status(201)
         .json(new ApiResponse(201, "User registered successfully", {
             user: {
@@ -74,8 +80,8 @@ export const loginUser = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = await createSession({ user, req });
 
     res
-        .cookie("accessToken", accessToken, { httpOnly: true, secure: true })
-        .cookie("refreshToken", refreshToken, { httpOnly: true, secure: true })
+        .cookie("accessToken", accessToken, cookieOptions)
+        .cookie("refreshToken", refreshToken, cookieOptions)
         .status(200)
         .json(new ApiResponse(200, "Login successful", {
             user: {

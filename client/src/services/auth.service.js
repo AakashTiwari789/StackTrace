@@ -22,6 +22,7 @@ const authService = {
     },
 
     getMe() {
+        // console.log("Fetching current user with cookies:", document.cookie);
         return apiFetch("auth/me");
     },
 };

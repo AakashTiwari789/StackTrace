@@ -12,10 +12,11 @@ export function AuthProvider({ children }) {
     useEffect(() => {
         authService.getMe()
             .then((data) => {
+                // console.log("[AuthProvider] Fetched logged in user:", data.message.user);
                 setUser(data.message.user);
             })
             .catch((error) => {
-                console.log("[AuthProvider] No user logged in:", error);
+                // console.log("[AuthProvider] No user logged in:", error);
                 setUser(null);
             })
             .finally(() => {
@@ -24,19 +25,19 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = async (data) => {
-        const loginResponse = await authService.login(data);
+        await authService.login(data);
         const res = await authService.getMe();
+        // console.log(res.message.user);
         setUser(res.message.user);
     };
 
     const logout = async () => {
-        console.log("[AuthProvider] Logout called");
         await authService.logout();
         setUser(null);
     };
 
     const register = async (data) => {
-        const registerResponse = await authService.register(data);
+        await authService.register(data);
         const res = await authService.getMe();
         setUser(res.message.user);
     }

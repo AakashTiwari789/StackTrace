@@ -17,7 +17,7 @@ export default function ProtectedLayout({ children }) {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="flex">
+    <div className="">
       <main>{children}</main>
     </div>
   );
