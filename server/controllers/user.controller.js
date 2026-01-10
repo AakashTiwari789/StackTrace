@@ -40,14 +40,15 @@ export const getAllSessionOfUser = asyncHandler(async (req, res) => {
 export const logoutUserFromAllDevices = asyncHandler(async (req, res) => {
     const userId = req.user.userId;
 
-    await Session.deleteMany({ userId });
+    await Session.updateMany({ userId, revoked: false }, { revoked: true });
 
     res.status(200).json(new ApiResponse(200, "Logged out from all devices successfully"));
 });
 
 export const logoutUserFromDevice = asyncHandler(async (req, res) => {
     const userId = req.user.userId;
-    const sessionId = req.params.sessionId;
+    const { sessionId } = req.body;
+    console.log("Logging out from session:", sessionId);
 
     const session = await Session.findOne({ sessionId, userId });
 
@@ -55,7 +56,7 @@ export const logoutUserFromDevice = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Session not found");
     }
 
-    await Session.deleteOne({ sessionId, userId });
+    await Session.findOneAndUpdate({ sessionId, userId }, { revoked: true });
 
     res.status(200).json(new ApiResponse(200, "Logged out from the device successfully"));
 });

@@ -13,11 +13,18 @@ export default function ProtectedLayout({ children }) {
     }
   }, [loading, isAuthenticated]);
 
-  if (loading) return <p>Loading...</p>;
+  if (loading) {
+    return (
+      <div className='w-full min-h-screen bg-gray-50 dark:bg-neutral-950 flex justify-center items-center'>
+        <p className='text-gray-700 dark:text-gray-300'>Loading...</p>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) return null;
 
   return (
-    <div className="">
+    <div className="min-h-screen bg-gray-50 dark:bg-neutral-950">
       <main>{children}</main>
     </div>
   );

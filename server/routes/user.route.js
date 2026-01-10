@@ -12,6 +12,6 @@ Router.route('/sessions').post(authenticateUser, getAllSessionOfUser);
 
 Router.route('/logout-all-devices').post(authenticateUser, logoutUserFromAllDevices);
 
-Router.route('/logout-device/:sessionId').post(authenticateUser, logoutUserFromDevice);
+Router.route('/logout-device/').post(authenticateUser, logoutUserFromDevice);
 
 export default Router;

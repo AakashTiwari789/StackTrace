@@ -14,6 +14,7 @@ export function AuthProvider({ children }) {
             .then((data) => {
                 // console.log("[AuthProvider] Fetched logged in user:", data.message.user);
                 setUser(data.message.user);
+                // console.log("Current cookies:", document.cookie);
             })
             .catch((error) => {
                 // console.log("[AuthProvider] No user logged in:", error);
