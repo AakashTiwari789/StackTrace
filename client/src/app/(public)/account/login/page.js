@@ -11,6 +11,66 @@ const LoginPage = () => {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState("login");
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [isPasswordMatch, setIsPasswordMatch] = useState(true);
+    const [fieldErrors, setFieldErrors] = useState({});
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameRegex = /^[a-zA-Z0-9_]+$/; // letters, numbers, underscore 
+
+    const checkValidEmail = (email) => {
+        return emailRegex.test(email);
+    }
+
+    const checkValidUsername = (username) => {
+        return usernameRegex.test(username);
+    }
+
+    const validate = () => {
+        const errors = {};
+
+        if (activeTab === "login") {
+            if (!formData.username.trim()) {
+                errors.username = "Username or email is required.";
+            } else if (!checkValidEmail(formData.username) && !checkValidUsername(formData.username)) {
+                errors.username = "Please enter a valid email or username.";
+            }
+            if (!formData.password.trim()) {
+                errors.password = "Password is required.";
+            }
+        } else {
+            if (!formData.email.trim()) {
+                errors.email = "Email is required.";
+            } else if (!checkValidEmail(formData.email)) {
+                errors.email = "Please enter a valid email address.";
+            }
+
+            if (!formData.username.trim()) {
+                errors.username = "Username is required.";
+            } else if (!checkValidUsername(formData.username)) {
+                errors.username = "Username can only contain letters, numbers, and underscore (_).";
+            }
+
+            if (!formData.password.trim() || formData.password.length <= 6) {
+                errors.password = "Password must be longer than 6 characters.";
+            }
+
+            if (!formData.confirmPassword.trim()) {
+                errors.confirmPassword = "Confirm your password.";
+            } else if (formData.password !== formData.confirmPassword) {
+                errors.confirmPassword = "Passwords do not match.";
+            }
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    }
+
+    useEffect(() => {
+        setFieldErrors({});
+        setError(null);
+    }, [activeTab]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -28,6 +88,16 @@ const LoginPage = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+        if (e.target.name === "confirmPassword" || e.target.name === "password") {
+            setIsPasswordMatch(value === formData.password);
+        }
+
+        // Clear field-specific error when user edits that field
+        if (fieldErrors[name]) {
+            const nextErrors = { ...fieldErrors };
+            delete nextErrors[name];
+            setFieldErrors(nextErrors);
+        }
 
         if (activeTab === "login" && name === "username") {
             setFormData({
@@ -41,10 +111,16 @@ const LoginPage = () => {
                 [name]: value,
             });
         }
+        setError(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError(null);
+        if (!validate()) {
+            return;
+        }
+        setLoading(true);
         try {
             if (activeTab === "login") {
                 await login(formData);
@@ -53,7 +129,9 @@ const LoginPage = () => {
             }
         } catch (error) {
             console.error(activeTab === "login" ? "Login failed:" : "Registration failed:", error);
+            setError(error.message || "An error occurred. Please try again.");
         }
+        setLoading(false);
     };
 
     return (
@@ -99,6 +177,14 @@ const LoginPage = () => {
                     <div className="p-6 sm:p-8">
                         {activeTab === "login" ? (
                             <form onSubmit={handleSubmit} className="space-y-5">
+                                {
+                                    error && (
+                                        <div className="bg-transparent border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                            <strong className="font-bold">Error: </strong>
+                                            <span className="block sm:inline">{error}</span>
+                                        </div>
+                                    )
+                                }
                                 <div>
                                     <label htmlFor="login-username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Username or Email
@@ -113,11 +199,14 @@ const LoginPage = () => {
                                             name="username"
                                             value={formData.username}
                                             onChange={handleChange}
-                                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                            className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.username ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
                                             placeholder="username or email"
                                             required
                                         />
                                     </div>
+                                    {fieldErrors.username && (
+                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.username}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -134,7 +223,7 @@ const LoginPage = () => {
                                             name="password"
                                             value={formData.password}
                                             onChange={handleChange}
-                                            className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                            className={`block w-full pl-10 pr-10 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.password ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
                                             placeholder="••••••••"
                                             required
                                         />
@@ -146,6 +235,9 @@ const LoginPage = () => {
                                             {showPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
                                         </button>
                                     </div>
+                                    {fieldErrors.password && (
+                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.password}</p>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center justify-between">
@@ -157,15 +249,35 @@ const LoginPage = () => {
                                     </Link>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
-                                >
-                                    Login
-                                </button>
+                                {
+                                    loading ? (
+                                        <button
+                                            type="button"
+                                            disabled
+                                            className="w-full py-3 px-4 bg-gray-400 text-white font-semibold rounded-lg transition cursor-not-allowed"
+                                        >
+                                            Logging in...
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="submit"
+                                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
+                                        >
+                                            Login
+                                        </button>
+                                    )
+                                }
                             </form>
                         ) : (
                             <form onSubmit={handleSubmit} className="space-y-5">
+                                {
+                                    error && (
+                                        <div className="bg-transparent border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                                            <strong className="font-bold">Error: </strong>
+                                            <span className="block sm:inline">{error}</span>
+                                        </div>
+                                    )
+                                }
                                 <div>
                                     <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Email Address
@@ -180,11 +292,14 @@ const LoginPage = () => {
                                             name="email"
                                             value={formData.email}
                                             onChange={handleChange}
-                                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                            className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.email ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
                                             placeholder="you@example.com"
                                             required
                                         />
                                     </div>
+                                    {fieldErrors.email && (
+                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.email}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -201,11 +316,14 @@ const LoginPage = () => {
                                             name="username"
                                             value={formData.username}
                                             onChange={handleChange}
-                                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                            className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.username ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
                                             placeholder="johndoe"
                                             required
                                         />
                                     </div>
+                                    {fieldErrors.username && (
+                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.username}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -222,7 +340,7 @@ const LoginPage = () => {
                                             name="password"
                                             value={formData.password}
                                             onChange={handleChange}
-                                            className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                            className={`block w-full pl-10 pr-10 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.password ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
                                             placeholder="••••••••"
                                             required
                                         />
@@ -234,6 +352,9 @@ const LoginPage = () => {
                                             {showPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
                                         </button>
                                     </div>
+                                    {fieldErrors.password && (
+                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.password}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -250,11 +371,17 @@ const LoginPage = () => {
                                             name="confirmPassword"
                                             value={formData.confirmPassword}
                                             onChange={handleChange}
-                                            className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                                            className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.confirmPassword ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
                                             placeholder="••••••••"
                                             required
                                         />
                                     </div>
+                                    {fieldErrors.confirmPassword && (
+                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.confirmPassword}</p>
+                                    )}
+                                    {!fieldErrors.confirmPassword && !isPasswordMatch && (
+                                        <p className="text-red-600 text-sm mt-1">Passwords do not match</p>
+                                    )}
                                 </div>
 
                                 <div className="flex items-start">
@@ -276,12 +403,24 @@ const LoginPage = () => {
                                     </label>
                                 </div>
 
-                                <button
-                                    type="submit"
-                                    className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
-                                >
-                                    Create Account
-                                </button>
+                                {
+                                    loading ? (
+                                        <button
+                                            type="button"
+                                            disabled
+                                            className="w-full py-3 px-4 bg-gray-400 text-white font-semibold rounded-lg transition cursor-not-allowed"
+                                        >
+                                            Processing...
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="submit"
+                                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
+                                        >
+                                            Create Account
+                                        </button>
+                                    )
+                                }
                             </form>
                         )}
                     </div>

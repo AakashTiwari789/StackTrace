@@ -70,7 +70,7 @@ export default function Header() {
 
                 <div className="flex items-center gap-3">
                     {/* Login/Logout button on md+ */}
-                    {isAuthenticated && user.username ? (
+                    {!!isAuthenticated && user.username ? (
                         <>
                             <div
                                 onClick={() => { setSubMenuOpen(!subMenuOpen) }}
@@ -136,7 +136,7 @@ export default function Header() {
                                     {item.name}
                                 </Link>
                             ))}
-                            {isAuthenticated ? (
+                            {!!isAuthenticated ? (
                                 <>
                                     {authSubMenuItems.map((item) => (
                                         <Link

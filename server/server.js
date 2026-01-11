@@ -47,6 +47,22 @@ app.use("/api/v1/health", healthCheckRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", userRoutes);
 
+// Global error handler middleware
+app.use((err, req, res, next) => {
+    const statusCode = err.statusCode || 500;
+    const message = err.message || "Internal server error";
+    const success = err.success !== undefined ? err.success : false;
+    const errors = err.errors || [];
+    const data = err.data || null;
+    
+    res.status(statusCode).json({
+        success,
+        statusCode,
+        message,
+        errors,
+        data
+    });
+});
 
 const initializeConnection = async () => {
     try {

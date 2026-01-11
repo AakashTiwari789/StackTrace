@@ -26,6 +26,35 @@ export const registerUser = asyncHandler(async (req, res) => {
     email = email?.toLowerCase();
     username = username?.toLowerCase();
 
+    // Basic validations
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const usernameRegex = /^[a-zA-Z0-9_]+$/; // letters, numbers, underscore only
+
+    if (!emailRegex.test(email)) {
+        throw new ApiError(400, "Invalid email format");
+    }
+
+    if (!usernameRegex.test(username)) {
+        throw new ApiError(400, "Username can only contain letters, numbers, and underscore (_)");
+    }
+
+    if (typeof password !== 'string' || password.length <= 6) {
+        throw new ApiError(400, "Password must be longer than 6 characters");
+    }
+
+    if(username.length < 3 || username.length > 30) {
+        throw new ApiError(400, "Username must be between 3 and 30 characters");
+    }
+    
+    if(password.length < 6) {
+        throw new ApiError(400, "Password must be at least 6 characters long");
+    }
+
+    const specialCharRegex = /[!@#$%^&*(),.?":{}|<>-]/;
+    if(specialCharRegex.test(username)) {
+        throw new ApiError(400, "Username cannot contain special characters other than underscores");
+    }
+
     const existingUser = await User.findOne({
         $or: [{ email }, { username }],
     });
@@ -72,10 +101,11 @@ export const loginUser = asyncHandler(async (req, res) => {
     }
 
     const isPasswordValid = await user.isPasswordCorrect(password);
-
+    
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid credentials");
     }
+    // console.log("Verifying password for user:", user._id);
 
     const { accessToken, refreshToken } = await createSession({ user, req });
     // console.log("Access Token:", accessToken);
