@@ -78,10 +78,18 @@ export const loginUser = asyncHandler(async (req, res) => {
     }
 
     const { accessToken, refreshToken } = await createSession({ user, req });
+    // console.log("Access Token:", accessToken);
+    // console.log("Refresh Token:", refreshToken); 
 
     res
-        .cookie("accessToken", accessToken, cookieOptions)
-        .cookie("refreshToken", refreshToken, cookieOptions)
+        .cookie("accessToken", accessToken, {
+            ...cookieOptions,
+            maxAge: parseInt(process.env.ACCESS_TOKEN_EXPIRY_MS),
+        })
+        .cookie("refreshToken", refreshToken, {
+            ...cookieOptions,
+            maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRY_MS),
+        })
         .status(200)
         .json(new ApiResponse(200, "Login successful", {
             user: {

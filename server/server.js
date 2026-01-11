@@ -22,6 +22,13 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
+// Trust proxy to get real IP (enable if behind Nginx, CloudFlare, etc.)
+app.set('trust proxy', true);
+app.use((req, res, next) => {
+    res.setHeader('Accept-CH', 'Sec-CH-UA-Platform, Sec-CH-UA-Mobile, Sec-CH-UA-Model');
+    next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/public', express.static('public'));

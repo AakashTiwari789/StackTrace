@@ -31,10 +31,13 @@ export const getUserByUsername = asyncHandler(async (req, res) => {
 
 export const getAllSessionOfUser = asyncHandler(async (req, res) => {
     const userId = req.user.userId;
+    const currentSessionId = req.user.sessionId;
+    // console.log("Fetching sessions for user:", userId);
+    // console.log("User: ", req.user.sessionId);
 
-    const sessions = await Session.find({ userId });
+    const sessions = await Session.find({ userId }).select("-refreshTokenHash -userId -_id -__v");
 
-    res.status(200).json(new ApiResponse(200, "Sessions fetched successfully", { sessions }));
+    res.status(200).json(new ApiResponse(200, "Sessions fetched successfully", { sessions, currentSessionId }));
 });
 
 export const logoutUserFromAllDevices = asyncHandler(async (req, res) => {
