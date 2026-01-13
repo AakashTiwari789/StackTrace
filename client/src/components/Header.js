@@ -54,7 +54,7 @@ export default function Header() {
 
     return (
         <>
-            <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-gray-100/80 dark:bg-neutral-900/80 backdrop-blur border-b border-gray-200 dark:border-neutral-800">
+            <header className="top-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-gray-100/80 dark:bg-neutral-900/80 backdrop-blur border-b border-gray-200 dark:border-neutral-800">
                 <div className="flex items-center gap-3">
                     <Link href="/" className="inline-flex items-center">
                         <span className="text-xl font-semibold text-gray-900 dark:text-white">StackTrace</span>

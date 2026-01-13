@@ -17,7 +17,7 @@ export const getUserById = asyncHandler(async (req, res) => {
 });
 
 export const getUserByUsername = asyncHandler(async (req, res) => {
-    console.log("Fetching user by username:", req.params.username);
+    // console.log("Fetching user by username:", req.params.username);
     const username = req.params.username.toLowerCase();
 
     const user = await User.findOne({ username }).select("-password");
@@ -51,7 +51,7 @@ export const logoutUserFromAllDevices = asyncHandler(async (req, res) => {
 export const logoutUserFromDevice = asyncHandler(async (req, res) => {
     const userId = req.user.userId;
     const { sessionId } = req.body;
-    console.log("Logging out from session:", sessionId);
+    // console.log("Logging out from session:", sessionId);
 
     const session = await Session.findOne({ sessionId, userId });
 

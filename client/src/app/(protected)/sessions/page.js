@@ -70,7 +70,7 @@ const SessionsPage = () => {
                 body: JSON.stringify({}),
             });
             const activeSessions = data.data.sessions.filter(s => !s.revoked);
-            console.log('Active sessions:', activeSessions);
+            // console.log('Active sessions:', activeSessions);
             // console.log('current session id:', data.data.currentSessionId);
             setSessions(activeSessions);
             setCurrentSessionId(data.data.currentSessionId);

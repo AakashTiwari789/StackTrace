@@ -2,11 +2,13 @@ import dotenv from "dotenv";
 dotenv.config();
 import { User } from "../models/user.model.js";
 import { Session } from "../models/session.model.js";
+import { VerifyLink } from "../models/verifylink.model.js";
 import { generateAccessToken, generateRefreshToken } from "../utils/generateToken.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import { createSession } from "../services/auth.service.js";
+import { sendEmail } from "../services/mail.service.js";
 
 const cookieOptions = {
     httpOnly: true,
@@ -165,4 +167,137 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
         },
     }, "User fetched successfully"
     ));
+});
+
+export const sendVerificationLink = asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    const email = user.email;
+    // console.log("Sending verification link to email:", email);
+
+    const link = crypto.randomUUID();
+
+    const existedLink = await VerifyLink.findOneAndUpdate({ email }, {
+        link: link,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
+    }, { new: true });
+
+    if (!existedLink) {
+        await VerifyLink.create({
+            email,
+            link: link,
+            expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
+        });
+    }
+
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${encodeURIComponent(link)}`;
+
+    await sendEmail(
+        email,
+        "Verify your email – StackTrace",
+        null,
+        `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <title>Email Verification</title>
+        </head>
+        <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+            <td align="center" style="padding:40px 16px;">
+                <table width="100%" max-width="600px" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; overflow:hidden;">
+                
+                <!-- Header -->
+                <tr>
+                    <td style="padding:24px; background:#0f172a; color:#ffffff; text-align:center;">
+                    <h1 style="margin:0; font-size:22px;">StackTrace</h1>
+                    </td>
+                </tr>
+
+                <!-- Body -->
+                <tr>
+                    <td style="padding:32px; color:#111827;">
+                    <h2 style="margin-top:0;">Verify your email address</h2>
+                    <p style="font-size:15px; line-height:1.6;">
+                        Thanks for signing up for <strong>StackTrace</strong>.
+                        Please confirm your email address by clicking the button below.
+                    </p>
+
+                    <div style="text-align:center; margin:32px 0;">
+                        <a href="${verificationUrl}"
+                        style="background:#2563eb; color:#ffffff; padding:14px 24px; text-decoration:none; border-radius:6px; font-size:16px; display:inline-block;">
+                        Verify Email
+                        </a>
+                    </div>
+
+                    <p style="font-size:14px; color:#374151;">
+                        If you didn’t create an account, you can safely ignore this email.
+                    </p>
+
+                    <p style="font-size:13px; color:#6b7280; word-break:break-all;">
+                        Or copy and paste this URL into your browser:<br/>
+                        <a href="${verificationUrl}" style="color:#2563eb;">
+                        ${verificationUrl}
+                        </a>
+                    </p>
+                    </td>
+                </tr>
+
+                <!-- Footer -->
+                <tr>
+                    <td style="padding:16px; background:#f9fafb; color:#6b7280; font-size:12px; text-align:center;">
+                    © ${new Date().getFullYear()} StackTrace. All rights reserved.
+                    </td>
+                </tr>
+
+                </table>
+            </td>
+            </tr>
+        </table>
+        </body>
+        </html>
+        `
+    );
+
+    res.status(200).json(new ApiResponse(200, "Verification link sent successfully"));
+});
+
+export const verifyEmailLink = asyncHandler(async (req, res) => {
+    const { link } = req.params;
+    console.log("Verifying email link:", link);
+
+    const verifyLinkRecord = await VerifyLink.findOne({ link: link });
+
+    if (!verifyLinkRecord || verifyLinkRecord.expiresAt < new Date()) {
+        throw new ApiError(400, "Invalid or expired verification link");
+    }
+    if (verifyLinkRecord.isVerified) {
+        throw new ApiError(400, "Verification link has already been used");
+    }
+
+    const user = await User.findOne({ email: verifyLinkRecord.email });
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if(user.isVerified) {
+        throw new ApiError(400, "User is already verified");
+    }
+
+    user.isVerified = true;
+    await user.save();
+
+    // Mark the link as verified
+    verifyLinkRecord.isVerified = true;
+    await verifyLinkRecord.save();
+
+    res.status(200).json(new ApiResponse(200, "Email verified successfully"));
 });
