@@ -42,16 +42,16 @@ export const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Password must be longer than 6 characters");
     }
 
-    if(username.length < 3 || username.length > 30) {
+    if (username.length < 3 || username.length > 30) {
         throw new ApiError(400, "Username must be between 3 and 30 characters");
     }
-    
-    if(password.length < 6) {
+
+    if (password.length < 6) {
         throw new ApiError(400, "Password must be at least 6 characters long");
     }
 
     const specialCharRegex = /[!@#$%^&*(),.?":{}|<>-]/;
-    if(specialCharRegex.test(username)) {
+    if (specialCharRegex.test(username)) {
         throw new ApiError(400, "Username cannot contain special characters other than underscores");
     }
 
@@ -75,14 +75,15 @@ export const registerUser = asyncHandler(async (req, res) => {
         .cookie("accessToken", accessToken, cookieOptions)
         .cookie("refreshToken", refreshToken, cookieOptions)
         .status(201)
-        .json(new ApiResponse(201, "User registered successfully", {
+        .json(new ApiResponse(201, {
             user: {
                 id: user._id,
                 email: user.email,
                 username: user.username,
                 role: user.role,
             },
-        }));
+        }, "User registered successfully"
+        ));
 });
 
 export const loginUser = asyncHandler(async (req, res) => {
@@ -101,7 +102,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     }
 
     const isPasswordValid = await user.isPasswordCorrect(password);
-    
+
     if (!isPasswordValid) {
         throw new ApiError(401, "Invalid credentials");
     }
@@ -121,14 +122,16 @@ export const loginUser = asyncHandler(async (req, res) => {
             maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRY_MS),
         })
         .status(200)
-        .json(new ApiResponse(200, "Login successful", {
-            user: {
-                id: user._id,
-                email: user.email,
-                username: user.username,
-                role: user.role,
+        .json(new ApiResponse(200,
+            {
+                user: {
+                    id: user._id,
+                    email: user.email,
+                    username: user.username,
+                    role: user.role,
+                }
             },
-        }));
+            "Login successful"));
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
@@ -153,12 +156,13 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
-    res.status(200).json(new ApiResponse(200, "Current user fetched successfully", {
+    res.status(200).json(new ApiResponse(200, {
         user: {
             id: user._id,
             email: user.email,
             username: user.username,
             role: user.role,
         },
-    }));
+    }, "User fetched successfully"
+    ));
 });

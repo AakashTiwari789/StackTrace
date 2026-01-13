@@ -69,11 +69,11 @@ const SessionsPage = () => {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            const activeSessions = data.message.sessions.filter(s => !s.revoked);
+            const activeSessions = data.data.sessions.filter(s => !s.revoked);
             console.log('Active sessions:', activeSessions);
-            // console.log('current session id:', data.message.currentSessionId);
+            // console.log('current session id:', data.data.currentSessionId);
             setSessions(activeSessions);
-            setCurrentSessionId(data.message.currentSessionId);
+            setCurrentSessionId(data.data.currentSessionId);
         } catch (error) {
             console.error('Error fetching sessions:', error);
         } finally {

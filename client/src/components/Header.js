@@ -16,22 +16,23 @@ const menuItems = [
     { name: "Contact Us", href: "/contact" },
 ];
 
-const authMenuItems = [
-    { name: "Dashboard", href: "/dashboard" },
-    { name: "Problems", href: "/problems" },
-    { name: "Contests", href: "/contests" },
-    { name: "Leaderboard", href: "/leaderboard" },
-];
 
 
 export default function Header() {
-
+    
     const { user, isAuthenticated, logout } = useAuth();
-
+    
     useEffect(() => {
         // Close mobile menu on route change
         setOpen(false);
-    }, []);
+    }, [logout]);
+    
+    const authMenuItems = [
+        { name: "Profile", href: `/profile/${user?.username}` },
+        { name: "Problems", href: "/problems" },
+        { name: "Contests", href: "/contests" },
+        { name: "Leaderboard", href: "/leaderboard" },
+    ];
 
     const authSubMenuItems = [
         { name: "Profile", href: `/profile/${user?.username}`, icon: CgProfile },
@@ -47,6 +48,7 @@ export default function Header() {
 
     const handleLogout = () => {
         logout();
+        // refresh the page or redirect to home
         setOpen(false);
     };
 
@@ -61,11 +63,27 @@ export default function Header() {
 
                 {/* Desktop nav */}
                 <nav className="hidden md:flex items-center gap-4 font-semibold">
-                    {menuItems.map((item) => (
-                        <Link key={item.name} href={item.href} className={navLinkBase}>
-                            {item.name}
-                        </Link>
-                    ))}
+                    {
+                        !!isAuthenticated ?
+                            authMenuItems.map((item) => (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    className={navLinkBase}
+                                >
+                                    {item.name}
+                                </Link>
+                            )) :
+                            menuItems.map((item) => (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    className={navLinkBase}
+                                >
+                                    {item.name}
+                                </Link>
+                            ))
+                    }
                 </nav>
 
                 <div className="flex items-center gap-3">
@@ -126,16 +144,29 @@ export default function Header() {
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
                                 <ThemeToggle />
                             </div>
-                            {menuItems.map((item) => (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    className="mt-1 px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                                    onClick={() => setOpen(false)}
-                                >
-                                    {item.name}
-                                </Link>
-                            ))}
+                            {
+                                !!isAuthenticated ?
+                                    authMenuItems.map((item) => (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            className="mt-1 px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                                            onClick={() => setOpen(false)}
+                                        >
+                                            {item.name}
+                                        </Link>
+                                    )) :
+                                    menuItems.map((item) => (
+                                        <Link
+                                            key={item.name}
+                                            href={item.href}
+                                            className="mt-1 px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                                            onClick={() => setOpen(false)}
+                                        >
+                                            {item.name}
+                                        </Link>
+                                    ))
+                            }
                             {!!isAuthenticated ? (
                                 <>
                                     {authSubMenuItems.map((item) => (
@@ -143,7 +174,10 @@ export default function Header() {
                                             key={item.name}
                                             href={item.href}
                                             className="mt-1 px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
-                                            onClick={() => setOpen(false)}
+                                            onClick={() => {
+                                                setOpen(false);
+                                                setSubMenuOpen(false);
+                                            }}
                                         >
                                             {item.name}
                                         </Link>
@@ -160,7 +194,10 @@ export default function Header() {
                                 <Link
                                     href="/account/login"
                                     className="mt-2 px-5 py-2 text-sm font-medium rounded-md bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 transition"
-                                    onClick={() => setOpen(false)}
+                                    onClick={() => {
+                                        setOpen(false);
+                                        setSubMenuOpen(false);
+                                    }}
                                 >
                                     Login
                                 </Link>
@@ -185,7 +222,10 @@ export default function Header() {
                             </Link>
                         ))}
                         <button
-                            onClick={handleLogout}
+                            onClick={() => {
+                                handleLogout();
+                                setSubMenuOpen(false);
+                            }}
                             className="w-full block px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
                         >
                             <FiLogOut className="inline mr-2 mb-1" />

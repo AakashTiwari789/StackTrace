@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
         authService.getMe()
             .then((data) => {
                 // console.log("[AuthProvider] Fetched logged in user:", data.message.user);
-                setUser(data.message.user);
+                setUser(data.data.user);
                 // console.log("Current cookies:", document.cookie);
             })
             .catch((error) => {
@@ -28,8 +28,7 @@ export function AuthProvider({ children }) {
     const login = async (data) => {
         await authService.login(data);
         const res = await authService.getMe();
-        // console.log(res.message.user);
-        setUser(res.message.user);
+        setUser(res.data.user);
     };
 
     const logout = async () => {
@@ -40,7 +39,7 @@ export function AuthProvider({ children }) {
     const register = async (data) => {
         await authService.register(data);
         const res = await authService.getMe();
-        setUser(res.message.user);
+        setUser(res.data.user);
     }
 
     return (

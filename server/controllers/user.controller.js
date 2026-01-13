@@ -13,7 +13,7 @@ export const getUserById = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
-    res.status(200).json(new ApiResponse(200, "User fetched successfully", { user }));
+    res.status(200).json(new ApiResponse(200, { user }, "User fetched successfully"));
 });
 
 export const getUserByUsername = asyncHandler(async (req, res) => {
@@ -26,7 +26,7 @@ export const getUserByUsername = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
-    res.status(200).json(new ApiResponse(200, "User fetched successfully", { user }));
+    res.status(200).json(new ApiResponse(200, { user }, "User fetched successfully"));
 });
 
 export const getAllSessionOfUser = asyncHandler(async (req, res) => {
@@ -37,7 +37,7 @@ export const getAllSessionOfUser = asyncHandler(async (req, res) => {
 
     const sessions = await Session.find({ userId }).select("-refreshTokenHash -userId -_id -__v");
 
-    res.status(200).json(new ApiResponse(200, "Sessions fetched successfully", { sessions, currentSessionId }));
+    res.status(200).json(new ApiResponse(200, { sessions, currentSessionId }, "Sessions fetched successfully"));
 });
 
 export const logoutUserFromAllDevices = asyncHandler(async (req, res) => {
