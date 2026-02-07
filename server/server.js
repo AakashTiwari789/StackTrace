@@ -68,7 +68,7 @@ const initializeConnection = async () => {
     try {
         await Promise.all([
             connectDB(),
-            connectRedis()
+            // connectRedis()
         ]);
         console.log("Connected to Redis successfully.");
 

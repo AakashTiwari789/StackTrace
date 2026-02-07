@@ -6,7 +6,7 @@ import React, { useState, useEffect, use } from 'react'
 const EmailVerificationPage = ({ params }) => {
     const { link } = use(params);
 
-    console.log("Verification link param:", link);
+    // console.log("Verification link param:", link);
 
     const [isVerified, setIsVerified] = useState(false);
     const [error, setError] = useState(null);

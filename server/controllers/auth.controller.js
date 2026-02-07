@@ -3,6 +3,8 @@ dotenv.config();
 import { User } from "../models/user.model.js";
 import { Session } from "../models/session.model.js";
 import { VerifyLink } from "../models/verifylink.model.js";
+import { VerifyOtp } from "../models/otp.model.js";
+import crypto from "crypto";
 import { generateAccessToken, generateRefreshToken } from "../utils/generateToken.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -83,6 +85,7 @@ export const registerUser = asyncHandler(async (req, res) => {
                 email: user.email,
                 username: user.username,
                 role: user.role,
+                isVerified: user.isVerified,    
             },
         }, "User registered successfully"
         ));
@@ -131,6 +134,7 @@ export const loginUser = asyncHandler(async (req, res) => {
                     email: user.email,
                     username: user.username,
                     role: user.role,
+                    isVerified: user.isVerified,
                 }
             },
             "Login successful"));
@@ -164,6 +168,7 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
             email: user.email,
             username: user.username,
             role: user.role,
+            isVerified: user.isVerified,
         },
     }, "User fetched successfully"
     ));
@@ -271,7 +276,7 @@ export const sendVerificationLink = asyncHandler(async (req, res) => {
 
 export const verifyEmailLink = asyncHandler(async (req, res) => {
     const { link } = req.params;
-    console.log("Verifying email link:", link);
+    // console.log("Verifying email link:", link);
 
     const verifyLinkRecord = await VerifyLink.findOne({ link: link });
 
@@ -288,7 +293,7 @@ export const verifyEmailLink = asyncHandler(async (req, res) => {
         throw new ApiError(404, "User not found");
     }
 
-    if(user.isVerified) {
+    if (user.isVerified) {
         throw new ApiError(400, "User is already verified");
     }
 
@@ -300,4 +305,128 @@ export const verifyEmailLink = asyncHandler(async (req, res) => {
     await verifyLinkRecord.save();
 
     res.status(200).json(new ApiResponse(200, "Email verified successfully"));
+});
+
+export const sendVerificationOtp = asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const user = await User.findById(userId);
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    } else if (user.isVerified) {
+        throw new ApiError(400, "User is already verified");
+    }
+    const email = user.email;
+    // console.log("Sending verification Otp to email:", email);
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // generate 6 digit OTP
+
+    const existedOtp = await VerifyOtp.findOneAndUpdate({ email }, {
+        otp: otp,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
+    }, { new: true });
+
+    if (!existedOtp) {
+        await VerifyOtp.create({
+            email,
+            otp,
+            isVerified: false,
+            expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
+        });
+    }
+
+    await sendEmail(
+        email,
+        "Your OTP for email verification – StackTrace",
+        `Your OTP for verifying your email is: ${otp}`,
+        `
+        <!DOCTYPE html>
+        <html lang="en">
+
+        <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <title>Email Verification OTP</title>
+        </head>
+
+        <body style="margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td align="center" style="padding:40px 16px;">
+                        <table width="100%" max-width="600px" cellpadding="0" cellspacing="0"
+                            style="background:#ffffff; border-radius:8px; overflow:hidden;">
+
+                            <!-- Header -->
+                            <tr>
+                                <td style="padding:24px; background:#0f172a; color:#ffffff; text-align:center;">
+                                    <h1 style="margin:0; font-size:22px;">StackTrace</h1>
+                                </td>
+                            </tr>
+
+                            <!-- Body -->
+                            <tr>
+                                <td style="padding:32px; color:#111827;">
+                                    <h2 style="margin-top:0;">Your OTP for email verification</h2>
+                                    <p style="font-size:15px; line-height:1.6;">
+                                        Your OTP for verifying your email is: <strong>${otp}</strong>
+                                    </p>
+
+                                    <p style="font-size:14px; color:#374151;">
+                                        This OTP will expire in 5 minutes. If you didn’t request this, you can safely ignore
+                                        this email.
+                                    </p>
+                                </td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td style="padding:16px; background:#f9fafb; color:#6b7280; font-size:12px; text-align:center;">
+                                    © ${new Date().getFullYear()} StackTrace. All rights reserved.
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+
+        </html>
+        `
+    );
+
+    res.status(200).json(new ApiResponse(200, "Verification otp sent successfully"));
+});
+
+
+export const VerifyOTP = asyncHandler(async (req, res) => {
+    const { otp } = req.body;
+    // console.log("Verifying otp:", otp);
+
+    const verifyOtpRecord = await VerifyOtp.findOne({ otp: otp });
+
+    if (!verifyOtpRecord || verifyOtpRecord.expiresAt < new Date()) {
+        throw new ApiError(400, "Invalid or expired verification otp");
+    }
+    if (verifyOtpRecord.isVerified) {
+        throw new ApiError(400, "Verification otp has already been used");
+    }
+
+    const user = await User.findOne({ email: verifyOtpRecord.email });
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (user.isVerified) {
+        throw new ApiError(400, "User is already verified");
+    }
+
+    user.isVerified = true;
+    await user.save();
+
+    // Mark the link as verified
+    verifyOtpRecord.isVerified = true;
+    await verifyOtpRecord.save();
+
+    res.status(200).json(new ApiResponse(200, "User verified successfully"));
 });

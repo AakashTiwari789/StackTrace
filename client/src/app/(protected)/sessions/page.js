@@ -3,7 +3,6 @@ import apiFetch from '@/services/api';
 import React, { act, useEffect, useState } from 'react'
 import { FiLogOut, FiSmartphone, FiMonitor, FiMapPin, FiClock } from 'react-icons/fi'
 import { useAuth } from '@/context/AuthContext.js';
-import { redirect } from 'next/dist/server/api-utils';
 
 const DeviceIcon = ({ deviceInfo }) => {
     const isMobile = deviceInfo?.isMobile || deviceInfo?.device === 'mobile' || deviceInfo?.device === 'tablet';
@@ -26,13 +25,13 @@ const parseDeviceInfo = (deviceString) => {
 
 const formatDeviceName = (deviceInfo) => {
     if (!deviceInfo) return 'Unknown Device';
-    
+
     const browser = deviceInfo.browser || 'Unknown Browser';
     const os = deviceInfo.os || 'Unknown OS';
-    const model = deviceInfo.deviceModel && deviceInfo.deviceModel !== 'Unknown' 
-        ? ` (${deviceInfo.deviceModel})` 
+    const model = deviceInfo.deviceModel && deviceInfo.deviceModel !== 'Unknown'
+        ? ` (${deviceInfo.deviceModel})`
         : '';
-    
+
     return `${browser} on ${os}${model}`;
 }
 
