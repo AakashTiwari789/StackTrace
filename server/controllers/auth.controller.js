@@ -323,7 +323,8 @@ export const sendVerificationOtp = asyncHandler(async (req, res) => {
 
     const existedOtp = await VerifyOtp.findOneAndUpdate({ email }, {
         otp: otp,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes from now,
+        isVerified: false
     }, { new: true });
 
     if (!existedOtp) {
