@@ -10,6 +10,7 @@ import ApiError from "../utils/ApiError.js";
 import { UAParser } from "ua-parser-js";
 import jwt from "jsonwebtoken";
 import { getClientIp } from "../utils/getClientIp.js";
+import { User } from "../models/user.model.js";
 
 export const createSession = async ({ user, req }) => {
     try {

@@ -44,7 +44,7 @@ export const registerUser = asyncHandler(async (req, res) => {
     }
 
     if (typeof password !== 'string' || password.length <= 6) {
-        throw new ApiError(400, "Password must be longer than 6 characters");
+        throw new ApiError(400, "Password must be 7 or more characters long");
     }
 
     if (username.length < 3 || username.length > 30) {
