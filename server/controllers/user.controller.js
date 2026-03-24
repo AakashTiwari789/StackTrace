@@ -45,7 +45,7 @@ export const logoutUserFromAllDevices = asyncHandler(async (req, res) => {
 
     await Session.updateMany({ userId, revoked: false }, { revoked: true });
 
-    res.status(200).json(new ApiResponse(200, "Logged out from all devices successfully"));
+    res.status(200).json(new ApiResponse(200, {}, "Logged out from all devices successfully"));
 });
 
 export const logoutUserFromDevice = asyncHandler(async (req, res) => {
@@ -61,5 +61,5 @@ export const logoutUserFromDevice = asyncHandler(async (req, res) => {
 
     await Session.findOneAndUpdate({ sessionId, userId }, { revoked: true });
 
-    res.status(200).json(new ApiResponse(200, "Logged out from the device successfully"));
+    res.status(200).json(new ApiResponse(200, {}, "Logged out from the device successfully"));
 });

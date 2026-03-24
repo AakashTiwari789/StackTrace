@@ -43,7 +43,6 @@ const VerifyPage = () => {
                 });
                 // console.log('OTP sent:', data);
                 setOtpSent(true);
-                setLoading(false);
                 countdown(60);
                 // show success message to user
             } else {
@@ -53,15 +52,15 @@ const VerifyPage = () => {
                 });
                 // console.log('Verification link sent:', data);
                 setLinkSent(true);
-                setLoading(false);
                 countdown(60);
                 // Show success message to user
             }
         } catch (error) {
             console.error('Verification error:', error);
             setError('An error occurred during verification. Please try again.');
+        } finally {
+            setLoading(false);
         }
-
     }
 
     const verifyOtp = async () => {

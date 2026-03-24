@@ -51,10 +51,6 @@ export const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Username must be between 3 and 30 characters");
     }
 
-    if (password.length < 6) {
-        throw new ApiError(400, "Password must be at least 6 characters long");
-    }
-
     const specialCharRegex = /[!@#$%^&*(),.?":{}|<>-]/;
     if (specialCharRegex.test(username)) {
         throw new ApiError(400, "Username cannot contain special characters other than underscores");
@@ -128,17 +124,15 @@ export const loginUser = asyncHandler(async (req, res) => {
             maxAge: parseInt(process.env.REFRESH_TOKEN_EXPIRY_MS),
         })
         .status(200)
-        .json(new ApiResponse(200,
-            {
-                user: {
-                    id: user._id,
-                    email: user.email,
-                    username: user.username,
-                    role: user.role,
-                    isVerified: user.isVerified,
-                }
-            },
-            "Login successful"));
+        .json(new ApiResponse(200, {
+            user: {
+                id: user._id,
+                email: user.email,
+                username: user.username,
+                role: user.role,
+                isVerified: user.isVerified,
+            }
+        }, "Login successful"));
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
@@ -148,10 +142,10 @@ export const logoutUser = asyncHandler(async (req, res) => {
     }
     await Session.findOneAndUpdate({ sessionId }, { revoked: true });
     res
-        .clearCookie("accessToken")
-        .clearCookie("refreshToken")
+        .clearCookie("accessToken", cookieOptions)
+        .clearCookie("refreshToken", cookieOptions)
         .status(200)
-        .json(new ApiResponse(200, "Logout successful"));
+        .json(new ApiResponse(200, {}, "Logout successful"));
 });
 
 export const getCurrentUser = asyncHandler(async (req, res) => {
@@ -272,7 +266,7 @@ export const sendVerificationLink = asyncHandler(async (req, res) => {
         `
     );
 
-    res.status(200).json(new ApiResponse(200, "Verification link sent successfully"));
+    res.status(200).json(new ApiResponse(200, {}, "Verification link sent successfully"));
 });
 
 export const verifyEmailLink = asyncHandler(async (req, res) => {
@@ -305,7 +299,7 @@ export const verifyEmailLink = asyncHandler(async (req, res) => {
     verifyLinkRecord.isVerified = true;
     await verifyLinkRecord.save();
 
-    res.status(200).json(new ApiResponse(200, "Email verified successfully"));
+    res.status(200).json(new ApiResponse(200, {}, "Email verified successfully"));
 });
 
 export const sendVerificationOtp = asyncHandler(async (req, res) => {
@@ -348,7 +342,7 @@ export const sendVerificationOtp = asyncHandler(async (req, res) => {
         html
     );
 
-    res.status(200).json(new ApiResponse(200, "Verification otp sent successfully"));
+    res.status(200).json(new ApiResponse(200, {}, "Verification otp sent successfully"));
 });
 
 
@@ -385,5 +379,13 @@ export const VerifyOTP = asyncHandler(async (req, res) => {
     verifyOtpRecord.isVerified = true;
     await verifyOtpRecord.save();
 
-    res.status(200).json(new ApiResponse(200, "User verified successfully"));
+    res.status(200).json(new ApiResponse(200, {
+        user: {
+            id: user._id,
+            email: user.email,
+            username: user.username,
+            role: user.role,
+            isVerified: user.isVerified,
+        },
+    }, "User verified successfully"));
 });

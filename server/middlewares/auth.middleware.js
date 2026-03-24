@@ -12,7 +12,18 @@ export const authenticateUser = asyncHandler(async (req, res, next) => {
         accessToken = await refreshAccessToken(req, res);
     }
 
-    const payload = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+    let payload;
+    try {
+        payload = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+    } catch (err) {
+        if (err.name === 'TokenExpiredError' || err.name === 'JsonWebTokenError') {
+            accessToken = await refreshAccessToken(req, res);
+            payload = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+        } else {
+            throw err;
+        }
+    }
+
     req.user = payload;
     next();
 });

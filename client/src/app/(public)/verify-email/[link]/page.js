@@ -21,7 +21,7 @@ const EmailVerificationPage = ({ params }) => {
                 if (response.success) {
                     setIsVerified(true);
                 } else {
-                    setError(data.message || 'Verification failed');
+                    setError(response.message || 'Verification failed. Please try again.');
                 }
             } catch (error) {
                 console.error('Email verification error:', error.message);
@@ -29,7 +29,7 @@ const EmailVerificationPage = ({ params }) => {
             }
         }
         verifyEmail();
-    }, []);
+    }, [link]);
 
 
     return (
@@ -46,7 +46,7 @@ const EmailVerificationPage = ({ params }) => {
                     <div>
                         <h2 className="text-2xl font-bold mb-4 text-red-600 dark:text-red-400">Verification Failed</h2>
                         <p className="text-gray-700 dark:text-gray-300">{error}</p>
-                        <p>Get the new Verification Link: 
+                        <p>Get the new Verification Link:
                             <Link href="/verify" className="text-blue-600 dark:text-blue-400 hover:underline ml-1">Verify Email</Link>
                         </p>
                     </div>
@@ -55,7 +55,7 @@ const EmailVerificationPage = ({ params }) => {
                         <p className="text-gray-700 dark:text-gray-300">Verifying your email, please wait...</p>
                     </div>
                 )}
-            </div>  
+            </div>
         </div>
     )
 }

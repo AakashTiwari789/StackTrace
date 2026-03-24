@@ -65,7 +65,17 @@ export const refreshAccessToken = async (req, res) => {
             throw new ApiError(401, "Refresh token missing");
         }
 
-        const payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        let payload;
+        try {
+            payload = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        } catch (error) {
+            if (error.name === 'TokenExpiredError') {
+                throw new ApiError(401, "Refresh token expired");
+            } else {
+                throw new ApiError(401, "Invalid refresh token");
+            }
+        };
+
         const session = await Session.findOne({ sessionId: payload.sessionId });
 
         if (!session || session.revoked) {
@@ -80,7 +90,13 @@ export const refreshAccessToken = async (req, res) => {
             throw new ApiError(401, "Invalid refresh token");
         }
 
-        const accessToken = generateAccessToken({ userId: session.userId, role: session.role, sessionId: session.sessionId });
+        const user = await User.findById(session.userId);
+
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+
+        const accessToken = generateAccessToken({ userId: session.userId, role: user.role, sessionId: session.sessionId });
 
         // Set the new access token as a cookie
         res.cookie("accessToken", accessToken, {
