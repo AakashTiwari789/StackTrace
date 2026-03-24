@@ -54,7 +54,7 @@ app.use((err, req, res, next) => {
     const success = err.success !== undefined ? err.success : false;
     const errors = err.errors || [];
     const data = err.data || null;
-    
+
     res.status(statusCode).json({
         success,
         statusCode,
@@ -76,7 +76,8 @@ const initializeConnection = async () => {
             console.log(`Server is running on port ${PORT}`);
         });
     } catch (error) {
-
+        console.error("Connection Error:", error);
+        process.exit(1);
     }
 };
 

@@ -2,14 +2,14 @@ import mongoose, { Schema } from "mongoose";
 import bcrypt from "bcrypt";
 
 const OTPSchema = new Schema({
-    email: {
-        type: String,
-        required: true,
-        unique: true
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: [true, "User reference is required"],
     },
-    otp: {
-        type: Number,
-        required: true,
+    otpHash: {
+        type: String,
+        required: [true, "OTP hash is required"],
     },
     isVerified: {
         type: Boolean,
@@ -18,7 +18,7 @@ const OTPSchema = new Schema({
     expiresAt: {
         type: Date,
         required: true,
-        index: { expires: 0 }
+        index: { expires: 0 } // This will automatically remove the document after the specified time (expiresAt) has passed
     },
 },
     { timestamps: true }
