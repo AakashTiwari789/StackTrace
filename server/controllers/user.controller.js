@@ -3,6 +3,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import ApiError from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { Session } from "../models/session.model.js";
+import { uploadFile } from "../services/storage.servics.js";
 
 export const getUserById = asyncHandler(async (req, res) => {
     const userId = req.params.id;
@@ -62,4 +63,30 @@ export const logoutUserFromDevice = asyncHandler(async (req, res) => {
     await Session.findOneAndUpdate({ sessionId, userId }, { revoked: true });
 
     res.status(200).json(new ApiResponse(200, {}, "Logged out from the device successfully"));
+});
+
+export const updateUserPhoto = asyncHandler(async (req, res) => {
+    const userId = req.user.userId;
+    const image = req.file;
+
+    if (!image) {
+        throw new ApiError(400, "No image file provided");
+    }
+
+    const result = await uploadFile(
+        image.buffer.toString("base64"),
+        `${userId}-${image.originalname}-${Date.now()}`,
+        "/stacktrace/profile"
+    );
+
+    await User.findByIdAndUpdate(userId, { imageUrl: result }, { new: true });
+
+    return res
+        .status(200)
+        .json(new ApiResponse(
+            200,
+            { imageUrl: result },
+            "Profile photo updated successfully"
+        ));
+
 });

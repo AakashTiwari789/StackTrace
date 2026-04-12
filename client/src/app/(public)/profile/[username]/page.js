@@ -4,7 +4,7 @@ import apiFetch from '@/services/api';
 import Link from 'next/link';
 import React, { useState, useEffect, use } from 'react'
 import { HiOutlineMailOpen, HiCalendar } from 'react-icons/hi';
-import { MdVerified } from 'react-icons/md';
+import { MdVerified, MdEdit } from 'react-icons/md';
 
 const ProfilePage = ({ params }) => {
 
@@ -15,6 +15,7 @@ const ProfilePage = ({ params }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -65,6 +66,36 @@ const ProfilePage = ({ params }) => {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
+  const isUserLogIn = isAuthenticated && loggedInUser?.username === user?.username;
+
+  const handlePhotoUpload = async (e) => {
+    const image = e.target.files?.[0];
+    if (!image) return;
+
+    try {
+      setUploadingPhoto(true);
+      setError(null);
+
+      const formData = new FormData();
+      formData.append('image', image);
+
+      const data = await apiFetch('user/update-photo', {
+        method: 'PUT',
+        body: formData,
+      });
+
+      setUser((prev) => ({
+        ...prev,
+        imageUrl: data?.data?.imageUrl || prev?.imageUrl,
+      }));
+    } catch (err) {
+      setError(err.message || 'Failed to update profile photo');
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className='w-full bg-gray-100 text-black dark:bg-neutral-950 dark:text-white min-h-screen px-6 py-12'>
       <div className='max-w-2xl mx-auto'>
@@ -72,17 +103,35 @@ const ProfilePage = ({ params }) => {
         {/* Profile Header */}
         <div className='bg-white dark:bg-gray-800 rounded-t-2xl p-8 text-black dark:text-white text-center'>
           <div className='flex justify-center mb-6'>
-            {user.imageUrl ? (
-              <img
-                src={user.imageUrl}
-                alt={user.fullName}
-                className='w-24 h-24 rounded-full border-4 border-white object-cover'
-              />
-            ) : (
-              <div className='w-24 h-24 rounded-full bg-black text-white dark:bg-neutral-400 dark:text-black border-4 border-white flex items-center justify-center text-4xl font-bold'>
-                {user.fullName?.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <div className='relative'>
+              {user.imageUrl ? (
+                <img
+                  src={user.imageUrl}
+                  alt={user.fullName}
+                  className='w-24 h-24 rounded-full border-4 border-white object-cover'
+                />
+              ) : (
+                <div className='w-24 h-24 rounded-full bg-black text-white dark:bg-neutral-400 dark:text-black border-4 border-white flex items-center justify-center text-4xl font-bold'>
+                  {user.fullName?.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              {isUserLogIn && (
+                <label
+                  className='absolute -right-1 -bottom-1 cursor-pointer rounded-full bg-blue-600 p-2 text-white shadow-md transition hover:bg-blue-700'
+                  title={uploadingPhoto ? 'Uploading...' : 'Edit profile picture'}
+                >
+                  <MdEdit className='text-base' />
+                  <input
+                    type='file'
+                    accept='image/*'
+                    className='hidden'
+                    onChange={handlePhotoUpload}
+                    disabled={uploadingPhoto}
+                  />
+                </label>
+              )}
+            </div>
           </div>
           <h1 className='text-4xl font-bold mb-2'>{user.fullName}</h1>
           <p className='text-gray-700 dark:text-gray-300 text-lg'>@{user.username}
@@ -91,7 +140,7 @@ const ProfilePage = ({ params }) => {
                 <MdVerified className='inline text-green-500 dark:text-green-400' title='Verified' />
               ) : (
                 <button className='py-2 px-2 bg-gray-600 dark:bg-gray-600 hover:bg-gray-800 dark:hover:bg-gray-900 rounded-md'>
-                  {isAuthenticated && loggedInUser.username === user.username ? (
+                  {isUserLogIn ? (
                     <Link href="/verify" className="text-sm text-white font-medium">
                       Get Verified
                     </Link>
