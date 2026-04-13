@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { HiX, HiMenu } from "react-icons/hi";
 import { CgProfile } from "react-icons/cg";
 import { FiSettings, FiLogOut } from "react-icons/fi";
@@ -19,14 +20,12 @@ const menuItems = [
 
 
 export default function Header() {
-    
+
     const { user, isAuthenticated, logout } = useAuth();
-    
-    useEffect(() => {
-        // Close mobile menu on route change
-        setOpen(false);
-    }, [logout]);
-    
+    const [open, setOpen] = useState(false);
+    const [subMenuOpen, setSubMenuOpen] = useState(false);
+    const [failedAvatarUrl, setFailedAvatarUrl] = useState(null);
+
     const authMenuItems = [
         { name: "Profile", href: `/profile/${user?.username}` },
         { name: "Problems", href: "/problems" },
@@ -40,8 +39,10 @@ export default function Header() {
         { name: "Sessions", href: "/sessions", icon: FaUserClock },
     ];
 
-    const [open, setOpen] = useState(false);
-    const [subMenuOpen, setSubMenuOpen] = useState(false);
+    const avatarSource = (user?.imageUrl || "").trim();
+    const avatarSrc = avatarSource && avatarSource !== failedAvatarUrl
+        ? avatarSource
+        : "/default-avatar.png";
 
     const navLinkBase =
         "px-4 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition";
@@ -96,10 +97,15 @@ export default function Header() {
                             >
                                 <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700">
                                     {user.imageUrl ? (
-                                        <img
-                                            src={user.imageUrl}
-                                            alt="Profile"
+                                        <Image
+                                            src={avatarSrc}
+                                            alt={user.fullName}
+                                            width={32}
+                                            height={32}
+                                            unoptimized
+                                            referrerPolicy="no-referrer"
                                             className="w-8 h-8 rounded-full object-cover"
+                                            onError={() => setFailedAvatarUrl(avatarSource)}
                                         />
                                     ) : (
                                         <span className="text-lg font-medium text-gray-700 dark:text-gray-200">

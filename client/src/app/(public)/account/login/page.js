@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from "@/context/AuthContext.js";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaUser, FaEye, FaEyeSlash, FaGoogle } from "react-icons/fa";
+
+const GOOGLE_AUTH_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000/api/v1"}/auth/google`;
 
 const LoginPage = () => {
 
@@ -67,10 +69,12 @@ const LoginPage = () => {
         return Object.keys(errors).length === 0;
     }
 
-    useEffect(() => {
+    const handleTabChange = (tab) => {
+        if (tab === activeTab) return;
+        setActiveTab(tab);
         setFieldErrors({});
         setError(null);
-    }, [activeTab]);
+    };
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -134,8 +138,12 @@ const LoginPage = () => {
         setLoading(false);
     };
 
+    const handleGoogleAuth = () => {
+        window.location.assign(GOOGLE_AUTH_URL);
+    };
+
     return (
-        <main className="min-h-screen bg-gray-50 dark:bg-neutral-950 flex items-center justify-center px-4 py-12">
+        <main className="min-h-screen bg-linear-to-b from-slate-100 via-gray-50 to-blue-50 dark:from-neutral-950 dark:via-neutral-950 dark:to-slate-900 flex items-center justify-center px-4 py-12">
             <div className="w-full max-w-md">
                 {/* Logo/Brand */}
                 <div className="text-center mb-8">
@@ -148,12 +156,12 @@ const LoginPage = () => {
                 </div>
 
                 {/* Card */}
-                <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl border border-gray-200 dark:border-neutral-800 overflow-hidden">
+                <div className="bg-white/95 dark:bg-neutral-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-neutral-800 overflow-hidden backdrop-blur-sm">
                     {/* Tabs Header */}
                     <div className="p-2">
                         <div className="grid grid-cols-2 gap-2 bg-gray-200 dark:bg-neutral-900 rounded-xl p-1">
                             <button
-                                onClick={() => setActiveTab("login")}
+                                onClick={() => handleTabChange("login")}
                                 className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${activeTab === "login"
                                     ? "bg-white dark:bg-neutral-800 text-gray-900 dark:text-white shadow-sm"
                                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
@@ -162,7 +170,7 @@ const LoginPage = () => {
                                 Login
                             </button>
                             <button
-                                onClick={() => setActiveTab("register")}
+                                onClick={() => handleTabChange("register")}
                                 className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition-all ${activeTab === "register"
                                     ? "bg-white dark:bg-neutral-800 text-gray-900 dark:text-white shadow-sm"
                                     : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
@@ -176,109 +184,128 @@ const LoginPage = () => {
                     {/* Tab Content */}
                     <div className="p-6 sm:p-8">
                         {activeTab === "login" ? (
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                {
-                                    error && (
-                                        <div className="bg-transparent border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                                            <strong className="font-bold">Error: </strong>
-                                            <span className="block sm:inline">{error}</span>
+                            <div>
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    {
+                                        error && (
+                                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg" role="alert">
+                                                <strong className="font-bold">Error: </strong>
+                                                <span className="block sm:inline">{error}</span>
+                                            </div>
+                                        )
+                                    }
+                                    <div>
+                                        <label htmlFor="login-username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Username or Email
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <FaUser className="h-5 w-5 text-gray-400" />
+                                            </div>
+                                            <input
+                                                id="login-username"
+                                                type="text"
+                                                name="username"
+                                                value={formData.username}
+                                                onChange={handleChange}
+                                                className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.username ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
+                                                placeholder="username or email"
+                                                required
+                                            />
                                         </div>
-                                    )
-                                }
-                                <div>
-                                    <label htmlFor="login-username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Username or Email
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <FaUser className="h-5 w-5 text-gray-400" />
-                                        </div>
-                                        <input
-                                            id="login-username"
-                                            type="text"
-                                            name="username"
-                                            value={formData.username}
-                                            onChange={handleChange}
-                                            className={`block w-full pl-10 pr-3 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.username ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
-                                            placeholder="username or email"
-                                            required
-                                        />
+                                        {fieldErrors.username && (
+                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.username}</p>
+                                        )}
                                     </div>
-                                    {fieldErrors.username && (
-                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.username}</p>
-                                    )}
-                                </div>
 
-                                <div>
-                                    <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Password
-                                    </label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <FaLock className="h-5 w-5 text-gray-400" />
+                                    <div>
+                                        <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            Password
+                                        </label>
+                                        <div className="relative">
+                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <FaLock className="h-5 w-5 text-gray-400" />
+                                            </div>
+                                            <input
+                                                id="login-password"
+                                                type={showPassword ? "text" : "password"}
+                                                name="password"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                                className={`block w-full pl-10 pr-10 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.password ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
+                                                placeholder="••••••••"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                            >
+                                                {showPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
+                                            </button>
                                         </div>
-                                        <input
-                                            id="login-password"
-                                            type={showPassword ? "text" : "password"}
-                                            name="password"
-                                            value={formData.password}
-                                            onChange={handleChange}
-                                            className={`block w-full pl-10 pr-10 py-2.5 border rounded-lg bg-white dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${fieldErrors.password ? 'border-red-500 dark:border-red-500' : 'border-gray-300 dark:border-neutral-700'}`}
-                                            placeholder="••••••••"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                        >
-                                            {showPassword ? <FaEyeSlash className="h-5 w-5" /> : <FaEye className="h-5 w-5" />}
-                                        </button>
+                                        {fieldErrors.password && (
+                                            <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.password}</p>
+                                        )}
                                     </div>
-                                    {fieldErrors.password && (
-                                        <p className="mt-1 text-sm text-red-600 dark:text-red-400">{fieldErrors.password}</p>
-                                    )}
+
+                                    <div className="flex items-center justify-between gap-3 text-sm">
+                                        <p className='text-gray-700 dark:text-gray-300'>Forgot password?</p>
+                                        <Link href="/account/forgot-password" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                                            Reset here
+                                        </Link>
+                                    </div>
+
+                                    {
+                                        loading ? (
+                                            <button
+                                                type="button"
+                                                disabled
+                                                className="w-full py-3 px-4 bg-gray-400 text-white font-semibold rounded-lg transition cursor-not-allowed"
+                                            >
+                                                Logging in...
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="submit"
+                                                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
+                                            >
+                                                Login
+                                            </button>
+                                        )
+                                    }
+                                </form>
+
+                                <div className="relative my-6">
+                                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                        <div className="w-full border-t border-gray-300 dark:border-neutral-700" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase tracking-wide">
+                                        <span className="bg-white dark:bg-neutral-900 px-3 text-gray-500 dark:text-gray-400">Or continue with</span>
+                                    </div>
                                 </div>
 
-                                <div className="flex items-center justify-between">
-                                    <p className='text-black dark:text-white'>
-                                        Forgot password?
-                                    </p>
-                                    <Link href="/account/forgot-password" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-                                        Reset here
-                                    </Link>
-                                </div>
-
-                                {
-                                    loading ? (
-                                        <button
-                                            type="button"
-                                            disabled
-                                            className="w-full py-3 px-4 bg-gray-400 text-white font-semibold rounded-lg transition cursor-not-allowed"
-                                        >
-                                            Logging in...
-                                        </button>
-                                    ) : (
-                                        <button
-                                            type="submit"
-                                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
-                                        >
-                                            Login
-                                        </button>
-                                    )
-                                }
-                            </form>
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleAuth}
+                                    className='w-full py-3 px-4 rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-800 dark:text-gray-100 font-semibold transition hover:bg-gray-50 dark:hover:bg-neutral-700 flex items-center justify-center gap-2'
+                                >
+                                    <FaGoogle className="h-4 w-4 text-red-500" />
+                                    <span>Login with Google</span>
+                                </button>
+                            </div>
                         ) : (
-                            <form onSubmit={handleSubmit} className="space-y-5">
-                                {
-                                    error && (
-                                        <div className="bg-transparent border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                                            <strong className="font-bold">Error: </strong>
-                                            <span className="block sm:inline">{error}</span>
-                                        </div>
-                                    )
-                                }
-                                <div>
+                            <div>
+                                <form onSubmit={handleSubmit} className="space-y-5">
+                                    {
+                                        error && (
+                                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg" role="alert">
+                                                <strong className="font-bold">Error: </strong>
+                                                <span className="block sm:inline">{error}</span>
+                                            </div>
+                                        )
+                                    }
+                                    <div>
                                     <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Email Address
                                     </label>
@@ -302,7 +329,7 @@ const LoginPage = () => {
                                     )}
                                 </div>
 
-                                <div>
+                                    <div>
                                     <label htmlFor="register-username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Username
                                     </label>
@@ -326,7 +353,7 @@ const LoginPage = () => {
                                     )}
                                 </div>
 
-                                <div>
+                                    <div>
                                     <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Password
                                     </label>
@@ -357,7 +384,7 @@ const LoginPage = () => {
                                     )}
                                 </div>
 
-                                <div>
+                                    <div>
                                     <label htmlFor="register-confirm-password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                         Confirm Password
                                     </label>
@@ -384,7 +411,7 @@ const LoginPage = () => {
                                     )}
                                 </div>
 
-                                <div className="flex items-start">
+                                    <div className="flex items-start">
                                     <input
                                         id="terms"
                                         type="checkbox"
@@ -403,25 +430,44 @@ const LoginPage = () => {
                                     </label>
                                 </div>
 
-                                {
-                                    loading ? (
-                                        <button
-                                            type="button"
-                                            disabled
-                                            className="w-full py-3 px-4 bg-gray-400 text-white font-semibold rounded-lg transition cursor-not-allowed"
-                                        >
-                                            Processing...
-                                        </button>
-                                    ) : (
-                                        <button
-                                            type="submit"
-                                            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
-                                        >
-                                            Create Account
-                                        </button>
-                                    )
-                                }
-                            </form>
+                                    {
+                                        loading ? (
+                                            <button
+                                                type="button"
+                                                disabled
+                                                className="w-full py-3 px-4 bg-gray-400 text-white font-semibold rounded-lg transition cursor-not-allowed"
+                                            >
+                                                Processing...
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="submit"
+                                                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900"
+                                            >
+                                                Create Account
+                                            </button>
+                                        )
+                                    }
+                                </form>
+
+                                <div className="relative my-6">
+                                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                        <div className="w-full border-t border-gray-300 dark:border-neutral-700" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase tracking-wide">
+                                        <span className="bg-white dark:bg-neutral-900 px-3 text-gray-500 dark:text-gray-400">Or continue with</span>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleGoogleAuth}
+                                    className='w-full py-3 px-4 rounded-lg border border-gray-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-gray-800 dark:text-gray-100 font-semibold transition hover:bg-gray-50 dark:hover:bg-neutral-700 flex items-center justify-center gap-2'
+                                >
+                                    <FaGoogle className="h-4 w-4 text-red-500" />
+                                    <span>Register with Google</span>
+                                </button>
+                            </div>
                         )}
                     </div>
 
@@ -429,9 +475,9 @@ const LoginPage = () => {
                     <div className="px-6 pb-6 text-center text-sm text-gray-600 dark:text-gray-400">
                         {activeTab === "login" ? (
                             <p>
-                                Don't have an account?{" "}
+                                Don&apos;t have an account?{" "}
                                 <button
-                                    onClick={() => setActiveTab("register")}
+                                    onClick={() => handleTabChange("register")}
                                     className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
                                 >
                                     Register
@@ -441,7 +487,7 @@ const LoginPage = () => {
                             <p>
                                 Already have an account?{" "}
                                 <button
-                                    onClick={() => setActiveTab("login")}
+                                    onClick={() => handleTabChange("login")}
                                     className="text-blue-600 dark:text-blue-400 font-semibold hover:underline"
                                 >
                                     Login

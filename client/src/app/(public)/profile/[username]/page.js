@@ -1,6 +1,7 @@
 "use client"
 import { useAuth } from '@/context/AuthContext';
 import apiFetch from '@/services/api';
+import Image from 'next/image';
 import Link from 'next/link';
 import React, { useState, useEffect, use } from 'react'
 import { HiOutlineMailOpen, HiCalendar } from 'react-icons/hi';
@@ -16,6 +17,7 @@ const ProfilePage = ({ params }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -24,6 +26,7 @@ const ProfilePage = ({ params }) => {
         const data = await apiFetch(`user/${username}`);
         // console.log('Fetched user data:', data.data.user);
         setUser(data.data.user);
+        setAvatarLoadFailed(false);
       } catch (err) {
         setError(err.message || 'Failed to load profile');
         console.error(`error: ${err.message}`);
@@ -88,6 +91,7 @@ const ProfilePage = ({ params }) => {
         ...prev,
         imageUrl: data?.data?.imageUrl || prev?.imageUrl,
       }));
+      setAvatarLoadFailed(false);
     } catch (err) {
       setError(err.message || 'Failed to update profile photo');
     } finally {
@@ -105,10 +109,15 @@ const ProfilePage = ({ params }) => {
           <div className='flex justify-center mb-6'>
             <div className='relative'>
               {user.imageUrl ? (
-                <img
-                  src={user.imageUrl}
+                <Image
+                  src={avatarLoadFailed ? '/default-avatar.png' : (user.imageUrl || '').trim()}
                   alt={user.fullName}
-                  className='w-24 h-24 rounded-full border-4 border-white object-cover'
+                  width={96}
+                  height={96}
+                  unoptimized
+                  referrerPolicy="no-referrer"
+                  className="w-24 h-24 rounded-full border-4 border-white object-cover"
+                  onError={() => setAvatarLoadFailed(true)}
                 />
               ) : (
                 <div className='w-24 h-24 rounded-full bg-black text-white dark:bg-neutral-400 dark:text-black border-4 border-white flex items-center justify-center text-4xl font-bold'>
@@ -160,7 +169,7 @@ const ProfilePage = ({ params }) => {
           {/* Email */}
           <div className='bg-gray-200 dark:bg-neutral-800 rounded-lg p-4 mb-6'>
             <div className='flex items-start space-x-3'>
-              <HiOutlineMailOpen className='text-xl text-gray-600 dark:text-gray-400 mt-1 flex-shrink-0' />
+              <HiOutlineMailOpen className='text-xl text-gray-600 dark:text-gray-400 mt-1 shrink-0' />
               <div>
                 <p className='text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>Email Address</p>
                 <p className='text-base font-semibold text-gray-900 dark:text-white break-all'>{user.email}</p>
@@ -172,7 +181,7 @@ const ProfilePage = ({ params }) => {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
             <div className='bg-gray-200 dark:bg-neutral-800 rounded-lg p-4'>
               <div className='flex items-start space-x-3'>
-                <HiCalendar className='text-xl text-gray-600 dark:text-gray-400 mt-1 flex-shrink-0' />
+                <HiCalendar className='text-xl text-gray-600 dark:text-gray-400 mt-1 shrink-0' />
                 <div>
                   <p className='text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>Joined</p>
                   <p className='text-sm font-semibold text-gray-900 dark:text-white'>{formatDate(user.createdAt)}</p>
@@ -181,7 +190,7 @@ const ProfilePage = ({ params }) => {
             </div>
             <div className='bg-gray-200 dark:bg-neutral-800 rounded-lg p-4'>
               <div className='flex items-start space-x-3'>
-                <HiCalendar className='text-xl text-gray-600 dark:text-gray-400 mt-1 flex-shrink-0' />
+                <HiCalendar className='text-xl text-gray-600 dark:text-gray-400 mt-1 shrink-0' />
                 <div>
                   <p className='text-xs font-medium text-gray-600 dark:text-gray-400 mb-1'>Last Updated</p>
                   <p className='text-sm font-semibold text-gray-900 dark:text-white'>{formatDate(user.updatedAt)}</p>

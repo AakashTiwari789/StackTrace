@@ -4,6 +4,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import connectDB from "./config/db.js";
 import connectRedis from "./config/redis.js";
+import passport from "passport";
+import { setupPassport } from "./config/passport.js";
 
 dotenv.config({
     path: "./.env"
@@ -33,6 +35,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/public', express.static('public'));
 app.use(cookieParser());
+app.use(passport.initialize());
+
+setupPassport();
 
 const PORT = process.env.PORT || 3000;
 

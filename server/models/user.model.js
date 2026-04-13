@@ -39,6 +39,15 @@ const userSchema = new Schema({
         type: String,
         default: null,
     },
+    googleId: {
+        type: String,
+        sparse: true,
+    },
+    provider: {
+        type: String,
+        enum: ['local', 'google'],
+        default: 'local',
+    }
 },
     { timestamps: true }
 );
