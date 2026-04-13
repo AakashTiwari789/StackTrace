@@ -4,6 +4,7 @@ import ApiError from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { Session } from "../models/session.model.js";
 import { uploadFile } from "../services/storage.servics.js";
+import { redisClient } from "../config/redis.js";
 
 export const getUserById = asyncHandler(async (req, res) => {
     const userId = req.params.id;
@@ -44,7 +45,20 @@ export const getAllSessionOfUser = asyncHandler(async (req, res) => {
 export const logoutUserFromAllDevices = asyncHandler(async (req, res) => {
     const userId = req.user.userId;
 
+    const sessions = await Session.find({ userId, revoked: false });
+
     await Session.updateMany({ userId, revoked: false }, { revoked: true });
+
+    const promises = sessions.map(session => {
+        const ttl = Math.ceil(session.expiresAt.getTime() / 1000) - Math.ceil(Date.now() / 1000);
+        return redisClient.set(
+            `revokedSession:${userId}:${session.sessionId}`,
+            "1",
+            { EX: Math.max(ttl, 0) }
+        );
+    });
+
+    await Promise.all(promises);
 
     res.status(200).json(new ApiResponse(200, {}, "Logged out from all devices successfully"));
 });
@@ -61,6 +75,13 @@ export const logoutUserFromDevice = asyncHandler(async (req, res) => {
     }
 
     await Session.findOneAndUpdate({ sessionId, userId }, { revoked: true });
+
+    const ttl = Math.ceil(session.expiresAt.getTime() / 1000) - Math.ceil(Date.now() / 1000);
+    await redisClient.set(
+        `revokedSession:${userId}:${sessionId}`,
+        "1",
+        { EX: Math.max(ttl, 0) }  // TTL auto-expires old revocations
+    );
 
     res.status(200).json(new ApiResponse(200, {}, "Logged out from the device successfully"));
 });

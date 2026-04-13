@@ -159,7 +159,16 @@ export const logoutUser = asyncHandler(async (req, res) => {
     if (!sessionId) {
         throw new ApiError(400, "No active session found");
     }
+    const session = await Session.findOne({ sessionId: sessionId });
     await Session.findOneAndUpdate({ sessionId }, { revoked: true });
+
+    const ttl = Math.ceil(session.expiresAt.getTime() / 1000) - Math.ceil(Date.now() / 1000);
+    await redisClient.set(
+        `revokedSession:${req.user.userId}:${sessionId}`,
+        "1",
+        { EX: Math.max(ttl, 0) }  // TTL auto-expires old revocations
+    );
+
     res
         .clearCookie("accessToken", cookieOptions)
         .clearCookie("refreshToken", cookieOptions)

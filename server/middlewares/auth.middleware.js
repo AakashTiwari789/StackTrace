@@ -8,8 +8,6 @@ import { redisClient } from "../config/redis.js";
 export const authenticateUser = asyncHandler(async (req, res, next) => {
     let accessToken = req.cookies.accessToken;
     // console.log("Authenticating user with access accessToken:", accessToken);
-    const sessionId = req.cookies.sessionId;
-
 
     if (!accessToken) {
         accessToken = await refreshAccessToken(req, res);
@@ -18,11 +16,6 @@ export const authenticateUser = asyncHandler(async (req, res, next) => {
     const isBlocked = await redisClient.exists(`accessToken:${accessToken}`);
     if (isBlocked) {
         return next(new ApiError(401, "Unauthorized: Token has been revoked"));
-    }
-
-    const session = await Session.findById(sessionId);
-    if (!session) {
-        return next(new ApiError(401, "Unauthorized: Invalid session"));
     }
 
     let payload;
@@ -35,6 +28,13 @@ export const authenticateUser = asyncHandler(async (req, res, next) => {
         } else {
             throw err;
         }
+    }
+
+    const isSessionRevoked = await redisClient.exists(
+        `revokedSession:${payload.userId}:${payload.sessionId}`
+    );
+    if (isSessionRevoked) {
+        return next(new ApiError(401, "Unauthorized: Session has been revoked"));
     }
 
     req.user = payload;
