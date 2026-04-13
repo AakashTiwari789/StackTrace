@@ -12,6 +12,8 @@ import ApiError from "../utils/ApiError.js";
 import { createSession } from "../services/auth.service.js";
 import { sendEmail } from "../services/mail.service.js";
 import { generateOTP, otpHTML } from "../utils/otp.js";
+import jwt from "jsonwebtoken";
+import { redisClient } from "../config/redis.js";
 
 const cookieOptions = {
     httpOnly: true,
@@ -136,6 +138,23 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
+
+    const accessToken = req.cookies.accessToken;
+    const refreshToken = req.cookies.refreshToken;
+
+    const accessPayload = jwt.decode(accessToken, process.env.ACCESS_TOKEN_SECRET);
+    // console.log("Decoded JWT accessPayload:", accessPayload);
+
+    const refreshPayload = jwt.decode(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+    // console.log("Decoded JWT refreshPayload:", refreshPayload);
+
+    await redisClient.set(`accessToken:${accessToken}`, "revoked");
+    await redisClient.expireAt(`accessToken:${accessToken}`, accessPayload.exp);
+
+    await redisClient.set(`refreshToken:${refreshToken}`, "revoked");
+    await redisClient.expireAt(`refreshToken:${refreshToken}`, refreshPayload.exp);
+
+
     const sessionId = req.user.sessionId;
     if (!sessionId) {
         throw new ApiError(400, "No active session found");
