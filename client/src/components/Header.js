@@ -93,9 +93,9 @@ export default function Header() {
                         <>
                             <div
                                 onClick={() => { setSubMenuOpen(!subMenuOpen) }}
-                                className="hidden md:inline-block text-sm font-medium rounded-md text-gray-700 dark:text-gray-200"
+                                className="hidden md:inline-block text-sm font-medium rounded-md"
                             >
-                                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-700">
+                                <div className="w-8 h-8 flex items-center justify-center rounded-full bg-black text-white hover:bg-gray-800 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200">
                                     {user.imageUrl ? (
                                         <Image
                                             src={avatarSrc}
@@ -108,7 +108,7 @@ export default function Header() {
                                             onError={() => setFailedAvatarUrl(avatarSource)}
                                         />
                                     ) : (
-                                        <span className="text-lg font-medium text-gray-700 dark:text-gray-200">
+                                        <span className="text-lg font-medium ">
                                             {user.username.charAt(0).toUpperCase()}
                                         </span>
                                     )}
