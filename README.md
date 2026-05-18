@@ -1,12 +1,28 @@
 # StackTrace
 
-A full-stack web app with a Next.js client and an Express/MongoDB API server. The app focuses on user authentication, sessions, and coding-related pages like problemset, problems, and leaderboard.
+StackTrace is a full-stack coding platform built with a Next.js client and an Express/MongoDB API server. The current app focuses on authentication, email verification, profile management, session control, and a set of scaffolded product pages for the coding platform experience.
+
+## Current Features
+
+- Local account registration and login with JWT cookies.
+- Google OAuth login flow.
+- Auth state bootstrap on the client through `/auth/me`.
+- Email verification through either a one-time password or a verification link.
+- Active session tracking with per-device logout and logout-from-all-devices support.
+- Public user profiles by username.
+- Logged-in profile editing with avatar upload.
+- Dark/light theme toggle in the site header.
+- Responsive navigation for authenticated and public users.
+- Public content pages for features, developers, contact, privacy, terms, and subscribe.
+- Problem routing scaffold, including a redirect from `/problems` to `/problemset` and a dynamic problem page route.
+- Protected dashboard-style pages for verification, sessions, and admin access.
 
 ## Tech Stack
 
-- Client: Next.js (App Router), React, Tailwind CSS
-- Server: Node.js, Express, MongoDB (Mongoose), Redis (optional), JWT
-- Email: Nodemailer (Gmail OAuth)
+- Client: Next.js App Router, React, Tailwind CSS
+- Server: Node.js, Express, MongoDB with Mongoose, Redis, JWT, Passport Google OAuth
+- Email: Nodemailer with Gmail OAuth credentials
+- File upload: Multer on the API, external storage upload service for profile photos
 
 ## Monorepo Structure
 
@@ -17,10 +33,11 @@ server/   # Express API
 
 ## Prerequisites
 
-- Node.js 18+ (recommended)
+- Node.js 18+ recommended
 - MongoDB instance
-- Redis instance (optional, see server config)
-- Gmail OAuth credentials for email sending
+- Redis instance for token/session revocation support
+- Gmail OAuth credentials for email sending and Google sign-in
+- A frontend URL and server URL configured in environment variables
 
 ## Setup
 
@@ -32,9 +49,9 @@ npm install
 cp .env.sample .env
 ```
 
-Edit `client/.env`:
+Set `client/.env`:
 
-```
+```env
 NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1
 ```
 
@@ -44,7 +61,7 @@ Start the client:
 npm run dev
 ```
 
-The client runs on http://localhost:3000.
+The client runs on http://localhost:3000 by default.
 
 ### 2) Server
 
@@ -54,53 +71,78 @@ npm install
 cp .env.sample .env
 ```
 
-Edit `server/.env` using the variables below.
-
-Start the server:
+Edit `server/.env` with the variables below, then start the server:
 
 ```bash
 npm run dev
 ```
 
-The API runs on http://localhost:5000 by default.
+The API listens on the configured `PORT` value. The code defaults to 3000 if `PORT` is not set, but the client expects the API at the base URL above.
 
 ## Environment Variables
 
 ### Client (`client/.env`)
 
-- `NEXT_PUBLIC_API_BASE_URL` - Base URL for the API (default: http://localhost:5000/api/v1)
+- `NEXT_PUBLIC_API_BASE_URL` - Base URL for the API, for example `http://localhost:5000/api/v1`
 
 ### Server (`server/.env`)
 
-- `PORT` - API port (default: 5000 in sample)
+- `PORT` - API port
+- `SERVER_URL` - Public server URL used for OAuth callback URLs
+- `FRONTEND_URL` - Frontend URL used for redirects after OAuth and email verification
 - `MONGODB_URI` - MongoDB connection string
-- `REDIS_PASS` - Redis password (optional if Redis disabled)
-- `ALLOWED_ORIGINS` - Comma-separated list of allowed origins
+- `REDIS_PASS` - Redis password if required by your Redis setup
+- `ALLOWED_ORIGINS` - Comma-separated list of allowed client origins
 - `ACCESS_TOKEN_SECRET` - JWT access token secret
-- `ACCESS_TOKEN_EXPIRY` - Access token expiry (e.g. 10m)
+- `ACCESS_TOKEN_EXPIRY` - Access token expiry, for example `10m`
+- `ACCESS_TOKEN_EXPIRY_MS` - Access token expiry in milliseconds
 - `REFRESH_TOKEN_SECRET` - JWT refresh token secret
-- `REFRESH_TOKEN_EXPIRY` - Refresh token expiry (e.g. 7d)
-- `REFRESH_TOKEN_EXPIRY_MS` - Refresh token expiry in ms
-- `ACCESS_TOKEN_EXPIRY_MS` - Access token expiry in ms
-- `FRONTEND_URL` - Frontend URL (e.g. http://localhost:3000)
-- `EMAIL_CLIENT_ID` - Gmail OAuth client id
-- `EMAIL_CLIENT_SECRET` - Gmail OAuth client secret
-- `EMAIL_REFRESH_TOKEN` - Gmail OAuth refresh token
-- `EMAIL_USER` - Gmail address
+- `REFRESH_TOKEN_EXPIRY` - Refresh token expiry, for example `7d`
+- `REFRESH_TOKEN_EXPIRY_MS` - Refresh token expiry in milliseconds
+- `EMAIL_CLIENT_ID` - Gmail OAuth client ID used by mail sending and Google OAuth
+- `EMAIL_CLIENT_SECRET` - Gmail OAuth client secret used by mail sending and Google OAuth
+- `EMAIL_REFRESH_TOKEN` - Gmail OAuth refresh token for Nodemailer
+- `EMAIL_USER` - Gmail address used as the sender
 
 ## Scripts
 
 ### Client
 
-- `npm run dev` - Start Next.js dev server
+- `npm run dev` - Start the Next.js dev server
 - `npm run build` - Build for production
-- `npm run start` - Run production build
-- `npm run lint` - Lint
+- `npm run start` - Run the production build
+- `npm run lint` - Run linting
 
 ### Server
 
-- `npm run dev` - Start server with nodemon
-- `npm run start` - Start server
+- `npm run dev` - Start the API with nodemon
+- `npm run start` - Start the API
+
+## Current UI Routes
+
+### Public
+
+- `/` - Landing page
+- `/account/login` - Login and registration
+- `/account/forgot-password` - Placeholder forgot-password screen
+- `/features` - Features page scaffold
+- `/developers` - Developers page scaffold
+- `/contact` - Contact page scaffold
+- `/privacy` - Privacy page scaffold
+- `/terms` - Terms page scaffold
+- `/subscribe` - Subscribe page scaffold
+- `/problemset` - Problem set page scaffold
+- `/problems` - Redirects to `/problemset`
+- `/problems/[problem]` - Dynamic problem page scaffold
+- `/leaderboard` - Leaderboard page scaffold
+- `/profile/[username]` - Public profile page
+- `/verify-email/[link]` - Email verification link handler
+
+### Protected
+
+- `/verify` - OTP and link verification controls
+- `/sessions` - Active session management
+- `/admin` - Admin placeholder page
 
 ## API Overview
 
@@ -112,43 +154,45 @@ Base URL: `/api/v1`
 
 ### Auth
 
-- `POST /auth/register`
-- `POST /auth/login`
-- `POST /auth/logout`
-- `GET /auth/me`
-- `POST /auth/send-verification-link`
-- `GET /auth/verify-email/:link`
-- `POST /auth/send-otp`
-- `POST /auth/verify-otp`
+- `POST /auth/register` - Register and create a session
+- `POST /auth/login` - Login with username or email
+- `POST /auth/logout` - Logout current session
+- `GET /auth/me` - Fetch the authenticated user
+- `POST /auth/send-verification-link` - Send an email verification link
+- `GET /auth/verify-email/:link` - Verify a user through a link
+- `POST /auth/send-otp` - Send a verification OTP
+- `POST /auth/verify-otp` - Verify the OTP
+- `GET /auth/google` - Start Google OAuth login
+- `GET /auth/google/callback` - Google OAuth callback
 
 ### User
 
-- `GET /user/get-user/:id`
-- `GET /user/:username`
-- `POST /user/sessions`
-- `POST /user/logout-all-devices`
-- `POST /user/logout-device`
+- `GET /user/get-user/:id` - Fetch a user by MongoDB ID
+- `GET /user/:username` - Fetch a user by username
+- `POST /user/sessions` - List active sessions for the authenticated user
+- `POST /user/logout-all-devices` - Revoke all active sessions for the authenticated user
+- `POST /user/logout-device` - Revoke a specific session
+- `PUT /user/update-photo` - Upload and update the authenticated user's profile photo
 
 ## Authentication & Verification
 
 ### OTP Verification Flow
 
-The OTP (One-Time Password) verification system uses the following secure approach:
+OTP values are hashed with SHA-256 before being stored. Each OTP is tied to a single user, expires after 5 minutes, and can only be used once.
 
-- **OTP Storage**: OTP values are never stored in plain text. Instead, SHA256 hashes are stored in the database for security.
-- **User Scoping**: OTP records are uniquely linked to each user by `userId`, preventing cross-account collision attacks.
-- **Expiration**: OTPs automatically expire after 5 minutes.
-- **Single Use**: OTP can only be used once; subsequent attempts with the same OTP are rejected.
-- **Verification**: Client sends raw OTP → Server hashes it → Compares hash against stored hash for the authenticated user.
-
-### Email Verification
+### Email Verification Flow
 
 Two verification methods are supported:
 
-1. **Verification Link**: User receives a unique link that expires after 5 minutes.
-2. **OTP**: User receives a 6-digit one-time password that expires after 5 minutes.
+1. Verification link: a unique link sent to the user’s email and valid for 5 minutes.
+2. OTP: a 6-digit code sent to the user’s email and valid for 5 minutes.
 
-Both methods require the user to be authenticated and not already verified.
+Both verification methods require an authenticated user who is not already verified.
+
+## Notes
+
+- Several route pages are currently scaffolded with placeholder UI, but the auth, verification, profile, and session features are implemented end to end.
+- The public header and footer already expose the main navigation entry points for the current app.
 
 ## License
 
