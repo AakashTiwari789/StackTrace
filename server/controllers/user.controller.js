@@ -100,8 +100,7 @@ export const updateUserPhoto = asyncHandler(async (req, res) => {
         "/stacktrace/profile"
     );
 
-    await User.findByIdAndUpdate(userId, { imageUrl: result }, { new: true });
-
+    await User.findByIdAndUpdate(userId, { imageUrl: result }, { returnDocument: "after" });
     return res
         .status(200)
         .json(new ApiResponse(

@@ -45,12 +45,14 @@ const PORT = process.env.PORT || 3000;
 import healthCheckRoutes from "./routes/healthCheck.route.js";
 import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
+import problemRoutes from "./routes/problem.route.js";
 
 
 // use routers
 app.use("/api/v1/health", healthCheckRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/problem", problemRoutes);
 
 // Global error handler middleware
 app.use((err, req, res, next) => {

@@ -40,3 +40,12 @@ export const authenticateUser = asyncHandler(async (req, res, next) => {
     req.user = payload;
     next();
 });
+
+export const authenticateAdmin = asyncHandler(async (req, res, next) => {
+    await authenticateUser(req, res, async () => {
+        if (req.user.role !== "admin") {
+            return next(new ApiError(403, "You are not authorized to perform this action"));
+        }
+        next();
+    });
+});

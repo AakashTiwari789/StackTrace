@@ -212,7 +212,7 @@ export const sendVerificationLink = asyncHandler(async (req, res) => {
     const existedLink = await VerifyLink.findOneAndUpdate({ email }, {
         link: link,
         expiresAt: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes from now
-    }, { new: true });
+    }, { returnDocument: 'after' });
 
     if (!existedLink) {
         await VerifyLink.create({
@@ -350,7 +350,7 @@ export const sendVerificationOtp = asyncHandler(async (req, res) => {
         otpHash,
         expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes from now,
         isVerified: false
-    }, { new: true });
+    }, { returnDocument: 'after' });
 
     if (!existedOtp) {
         await VerifyOtp.create({

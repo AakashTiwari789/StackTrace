@@ -3,6 +3,7 @@ import apiFetch from '@/services/api';
 import React, { act, useEffect, useState } from 'react'
 import { FiLogOut, FiSmartphone, FiMonitor, FiMapPin, FiClock } from 'react-icons/fi'
 import { useAuth } from '@/context/AuthContext.js';
+import { useRouter } from 'next/router';
 
 const DeviceIcon = ({ deviceInfo }) => {
     const isMobile = deviceInfo?.isMobile || deviceInfo?.device === 'mobile' || deviceInfo?.device === 'tablet';
@@ -100,8 +101,9 @@ const SessionsPage = () => {
                 body: JSON.stringify({}),
             });
             // Refresh the sessions list
+            const router = useRouter();
             await logout();
-            res.redirect('/login');
+            router.replace('/account/login');
         } catch (error) {
             console.error('Error logging out all sessions:', error);
         }
