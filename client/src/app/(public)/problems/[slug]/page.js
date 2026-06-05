@@ -6,6 +6,7 @@ import {
     Separator,
 } from "react-resizable-panels";
 import Editor from "@monaco-editor/react";
+import apiFetch from '@/services/api';
 
 const ProblemPage = ({ params }) => {
 
@@ -77,7 +78,7 @@ const ProblemPage = ({ params }) => {
             <Panel defaultSize={40} minSize={25} className='p-1'>
                 <Group orientation="vertical" className="h-full gap-1">
                     <Panel defaultSize={65} minSize={35}>
-                        <CodeEditor />
+                        <CodeEditor problem={problem} />
                     </Panel>
 
                     <Separator />
@@ -127,7 +128,7 @@ const ProblemDescription = ({ problem }) => {
     );
 }
 
-const CodeEditor = () => {
+const CodeEditor = ({ problem }) => {
     const templates = {
         cpp: `#include <bits/stdc++.h>
 using namespace std;
@@ -159,12 +160,29 @@ public class Main {
 
     const [language, setLanguage] = useState("cpp");
     const [code, setCode] = useState(templates.cpp);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     const handleLanguageChange = (e) => {
         const newLanguage = e.target.value;
         setLanguage(newLanguage);
         setCode(templates[newLanguage]);
     };
+
+    const [verdict, setVerdict] = useState({});
+    const handleProblemSubmit = async () => {
+        try {
+            setLoading(true);
+            const response = await apiFetch(`submit/${problem.id}`, {
+                method: "POST",
+                body: JSON.stringify(code),
+            });
+        } catch (error) {
+            setError("Error submitting problem", error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <div className="h-full flex flex-col bg-neutral-900 rounded-lg overflow-hidden">
@@ -225,7 +243,7 @@ public class Main {
                 />
             </div>
         </div>
-    );  
+    );
 };
 
 const TestCasePanel = ({ testCases }) => {
@@ -241,10 +259,9 @@ const TestCasePanel = ({ testCases }) => {
                         key={index}
                         onClick={() => setActiveTab(index)}
                         className={`px-4 py-2 text-sm font-medium whitespace-nowrap
-                            ${
-                                activeTab === index
-                                    ? "border-b-2 border-blue-500 text-blue-500"
-                                    : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                            ${activeTab === index
+                                ? "border-b-2 border-blue-500 text-blue-500"
+                                : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
                             }`}
                     >
                         Case {index + 1}

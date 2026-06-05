@@ -138,7 +138,7 @@ export const updateProblem = async (req, res) => {
 
 export const getAllProblems = async (req, res) => {
     try {
-        const problems = await Problem.find().select("title slug difficulty tags isPublished order acceptanceRate isPremium");
+        const problems = await Problem.find().select("title slug difficulty tags isPublished order acceptanceRate isPremium createdBy");
         res.status(200).json(new ApiResponse(
             200,
             { problems },
@@ -155,7 +155,7 @@ export const getProblemBySlug = async (req, res) => {
 
     try {
         const problem = await Problem.findOne({ slug }).select("-__v -createdAt -updatedAt -testCases");
-        
+
         if (!problem) {
             throw new ApiError(404, "Problem not found");
         }
@@ -168,5 +168,86 @@ export const getProblemBySlug = async (req, res) => {
     } catch (error) {
         console.error("Error fetching problem by slug:", error);
         throw new ApiError(500, `Failed to fetch problem: ${error.message}`);
+    }
+};
+
+export const togglePublishProblem = async (req, res) => {
+    const { problemId } = req.params;
+
+    try {
+        const problem = await Problem.findById(problemId).select("isPublished");
+        if (!problem) {
+            throw new ApiError(404, "Problem not found");
+        }
+
+        problem.isPublished = !problem.isPublished;
+        await problem.save();
+
+        res.status(200).json(new ApiResponse(
+            200,
+            { isPublished: problem.isPublished },
+            `Problem ${problem.isPublished ? "published" : "unpublished"} successfully`
+        ));
+    } catch (error) {
+        console.error("Error toggling publish status of problem:", error);
+        throw new ApiError(500, `Failed to toggle publish status: ${error.message}`);
+    }
+};
+
+export const togglePremiumProblem = async (req, res) => {
+    const { problemId } = req.params;
+
+    try {
+        const problem = await Problem.findById(problemId).select("isPremium");
+        if (!problem) {
+            throw new ApiError(404, "Problem not found");
+        }
+        problem.isPremium = !problem.isPremium;
+        await problem.save();
+
+        res.status(200).json(new ApiResponse(
+            200,
+            { isPremium: problem.isPremium },
+            `Problem ${problem.isPremium ? "marked as premium" : "marked as free"} successfully`
+        ));
+    } catch (error) {
+        console.error("Error toggling premium status of problem:", error);
+        throw new ApiError(500, `Failed to toggle premium status: ${error.message}`);
+    }
+}
+
+export const getTestCases = async (req, res) => {
+    const { slug } = req.params;
+    try {
+        const problem = await Problem.findOne({ slug }).select("_id");
+        if (!problem) {
+            throw new ApiError(404, "Problem not found");
+        }
+
+        const problemId = problem._id;
+        const testCases = await getTestCasesByProblemId(problemId);
+        res.status(200).json(new ApiResponse(
+            200,
+            { testCases },
+            "Test cases fetched successfully"
+        ));
+    } catch (error) {
+        console.error("Error fetching problem test cases:", error);
+        throw new ApiError(500, `Failed to fetch test cases: ${error.message}`);
+    }
+};
+
+export const getTestCasesByProblemId = async (problemId) => {
+    console.log("Fetching test cases for problemId:", problemId);
+    try {
+        const problem = await Problem.findById(problemId);
+        if (!problem) {
+            throw new ApiError(404, "Problem not found");
+        }
+
+        return problem.testCases;
+    } catch (error) {
+        console.error("Error fetching problem test cases:", error);
+        throw new ApiError(500, `Failed to fetch test cases: ${error.message}`);
     }
 };
