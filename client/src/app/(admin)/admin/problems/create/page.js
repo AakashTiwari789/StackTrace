@@ -8,13 +8,13 @@ import ProblemCreateForm from '@/components/ProblemCreateForm';
 const toApiPayload = (form) => ({
   title: form.title,
   slug: form.slug,
-  difficulty: form.difficulty.charAt(0).toUpperCase() + form.difficulty.slice(1),
+  difficulty: form.difficulty,
   tags: form.tags,
   statement: form.statement,
   inputFormat: form.inputFormat,
   outputFormat: form.outputFormat,
   constraints: form.constraints,
-  sampleTestCases: form.examples.map((example) => ({
+  sampleTestCases: form.sampleTestCases.map((example) => ({
     input: example.input,
     output: example.output,
     explanation: example.explanation,
@@ -40,7 +40,8 @@ export default function CreateProblemPage() {
     try {
       setLoading(true);
       setError(null);
-      await apiFetch('admin/problems/create', {
+      console.log("Submitting form with data:", form);
+      await apiFetch('problem/create', {
         method: 'POST',
         body: JSON.stringify(toApiPayload(form)),
       });

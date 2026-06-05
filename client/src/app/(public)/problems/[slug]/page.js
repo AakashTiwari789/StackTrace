@@ -7,6 +7,7 @@ import {
 } from "react-resizable-panels";
 import Editor from "@monaco-editor/react";
 import apiFetch from '@/services/api';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 const ProblemPage = ({ params }) => {
 
@@ -27,7 +28,7 @@ const ProblemPage = ({ params }) => {
                     },
                 });
                 const data = await response.json();
-                console.log("Fetched problem data:", data);
+                // console.log("Fetched problem data:", data);
                 if (response.ok) {
                     setProblem(data.data.problem);
                 } else {
@@ -101,19 +102,19 @@ const ProblemDescription = ({ problem }) => {
             </span>
             <div className='text-gray-700 dark:text-gray-300 my-4'>
                 <h3 className='font-semibold'>Statement:</h3>
-                <p>{problem?.statement}</p>
+                <MarkdownRenderer content={problem?.statement || ""} />
             </div>
             <div className='text-gray-700 dark:text-gray-300 mb-4'>
-                <h3 className='font-semibold'>Input Format:</h3>
-                <p>{problem?.inputFormat}</p>
+                <h3 className=  'font-semibold'>Input Format:</h3>
+                <MarkdownRenderer content={problem?.inputFormat || ""} />   
             </div>
             <div className='text-gray-700 dark:text-gray-300 mb-4'>
                 <h3 className='font-semibold'>Output Format:</h3>
-                <p>{problem?.outputFormat}</p>
+                <MarkdownRenderer content={problem?.outputFormat || ""} />
             </div>
             <div className='text-gray-700 dark:text-gray-300 mb-4'>
                 <h3 className='font-semibold'>Constraints:</h3>
-                <p>{problem?.constraints}</p>
+                <MarkdownRenderer content={problem?.constraints || ""} />
             </div>
             <div className='text-gray-700 dark:text-gray-300 mb-4'>
                 <h3 className='font-semibold'>Sample Test Cases:</h3>

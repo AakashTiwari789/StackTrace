@@ -10,6 +10,7 @@ const nextConfig = {
       },
     ],
   },
+  transpilePackages: ['react-resizable-panels', 'mermaid'],
 };
 
 export default nextConfig;

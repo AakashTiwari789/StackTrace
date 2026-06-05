@@ -6,29 +6,29 @@ import ProblemCreateForm from '@/components/ProblemCreateForm';
 import apiFetch from '@/services/api';
 
 const toApiPayload = (form) => ({
-    title: form.title,
-    slug: form.slug,
-    difficulty: form.difficulty.charAt(0).toUpperCase() + form.difficulty.slice(1),
-    tags: form.tags,
-    statement: form.statement,
-    inputFormat: form.inputFormat,
-    outputFormat: form.outputFormat,
-    constraints: form.constraints,
-    sampleTestCases: form.examples.map((example) => ({
-        input: example.input,
-        output: example.output,
-        explanation: example.explanation,
-    })),
-    testCases: form.testCases.map((testCase) => ({
-        input: testCase.input,
-        output: testCase.expectedOutput,
-        isSample: testCase.isSample,
-    })),
-    timeLimit: form.timeLimit,
-    memoryLimit: form.memoryLimit,
-    isPublished: form.isPublished,
-    isPremium: form.isPremium,
-    languagesAllowed: form.languagesAllowed,
+  title: form.title,
+  slug: form.slug,
+  difficulty: form.difficulty,
+  tags: form.tags,
+  statement: form.statement,
+  inputFormat: form.inputFormat,
+  outputFormat: form.outputFormat,
+  constraints: form.constraints,
+  sampleTestCases: form.sampleTestCases.map((example) => ({
+    input: example.input,
+    output: example.output,
+    explanation: example.explanation,
+  })),
+  testCases: form.testCases.map((testCase) => ({
+    input: testCase.input,
+    output: testCase.expectedOutput,
+    isSample: testCase.isSample,
+  })),
+  timeLimit: form.timeLimit,
+  memoryLimit: form.memoryLimit,
+  isPublished: form.isPublished,
+  isPremium: form.isPremium,
+  languagesAllowed: form.languagesAllowed,
 });
 
 export default function EditProblemPage({ params }) {

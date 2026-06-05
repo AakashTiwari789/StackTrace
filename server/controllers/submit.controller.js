@@ -11,7 +11,7 @@ export const submitProblem = async(req, res)=>{
 
     try {
         const testcases = await getTestCases(problemId);
-        console.log("Test cases retrieved successfully", testcases);
+        // console.log("Test cases retrieved successfully", testcases);
 
         // Here you would typically run the code against the test cases and determine if it passed or failed.
 

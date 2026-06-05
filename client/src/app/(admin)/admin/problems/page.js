@@ -52,7 +52,7 @@ const AdminProblemsPage = () => {
     }, [user]);
 
     useEffect(() => {
-        console.log("AdminProblemsPage: isAuthenticated =", isAuthenticated, "userId =", userId);
+        // console.log("AdminProblemsPage: isAuthenticated =", isAuthenticated, "userId =", userId);
         const fetchProblems = async () => {
             try {
                 setLoading(true);

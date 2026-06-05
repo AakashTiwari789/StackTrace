@@ -5,7 +5,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import { Counter } from "../models/counter.model.js";
 
 export const createNewProblem = async (req, res) => {
-    // console.log("Received request to create problem with data:", req.body);
+    console.log("Received request to create problem with data:", req.body);
     let { title, slug, difficulty, tags, statement, inputFormat, outputFormat, constraints, sampleTestCases, testCases, timeLimit, memoryLimit, isPublished, isPremium, languagesAllowed
     } = req.body;
 
@@ -238,7 +238,6 @@ export const getTestCases = async (req, res) => {
 };
 
 export const getTestCasesByProblemId = async (problemId) => {
-    console.log("Fetching test cases for problemId:", problemId);
     try {
         const problem = await Problem.findById(problemId);
         if (!problem) {

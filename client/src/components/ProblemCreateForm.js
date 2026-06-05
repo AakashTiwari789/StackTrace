@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 const LANGUAGES = ['cpp', 'python', 'javascript', 'java'];
-const DIFFICULTIES = ['easy', 'medium', 'hard'];
+const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 const TAGS = ['array', 'string', 'dp', 'graph', 'tree', 'math', 'greedy', 'binary-search', 'two-pointer', 'sliding-window'];
 
 const sampleTestCase = () => ({ input: '', output: '', explanation: '' });
@@ -12,7 +12,7 @@ const emptyTestCase = () => ({ input: '', expectedOutput: '', isSample: false })
 const createDefaultForm = () => ({
     title: '',
     slug: '',
-    difficulty: 'medium',
+    difficulty: 'Medium',
     tags: [],
     statement: '',
     inputFormat: '',
@@ -125,6 +125,7 @@ const ProblemCreateForm = ({
     };
 
     const handleSubmit = async (event) => {
+        console.log("Submitting form with data:", form);
         event.preventDefault();
         if (onSubmit) {
             await onSubmit(form);
