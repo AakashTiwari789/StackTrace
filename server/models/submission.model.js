@@ -29,14 +29,21 @@ const SubmissionSchema = new Schema(
         status: {
             type: String,
             enum: [
-                'pending',
-                'accepted',
-                'wrong_answer',
-                'runtime_error',
-                'time_limit_exceeded',
-                'compilation_error',
+                'Pending',
+                'Accepted',
+                'Wrong Answer',
+                'Time Limit Exceeded',
+                'Compilation Error',
+                'Runtime Error (SIGSEGV)',
+                'Runtime Error (SIGXFSZ)',
+                'Runtime Error (SIGFPE)',
+                'Runtime Error (SIGABRT)',
+                'Runtime Error (NZEC)',
+                'Runtime Error (Other)',
+                'Internal Error',
+                'Exec Format Error',
             ],
-            default: 'pending',
+            default: 'Pending',
         },
         verdict: {
             passedCount: {

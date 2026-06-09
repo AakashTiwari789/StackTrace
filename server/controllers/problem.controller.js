@@ -250,3 +250,22 @@ export const getTestCasesByProblemId = async (problemId) => {
         throw new ApiError(500, `Failed to fetch test cases: ${error.message}`);
     }
 };
+
+
+export const getProblemMetaData = async (problemId) => {
+    try {
+        const problem = await Problem.findById(problemId).select("timeLimit memoryLimit languagesAllowed");
+        if (!problem) {
+            throw new ApiError(404, "Problem not found");
+        }
+
+        return {
+            timeLimit: problem.timeLimit,
+            memoryLimit: problem.memoryLimit,
+            languagesAllowed: problem.languagesAllowed
+        };
+    } catch (error) {
+        console.error("Error fetching problem metadata:", error);
+        throw new ApiError(500, `Failed to fetch problem metadata: ${error.message}`);
+    }
+};
