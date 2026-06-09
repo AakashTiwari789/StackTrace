@@ -125,7 +125,7 @@ const ProblemCreateForm = ({
     };
 
     const handleSubmit = async (event) => {
-        console.log("Submitting form with data:", form);
+        // console.log("Submitting form with data:", form);
         event.preventDefault();
         if (onSubmit) {
             await onSubmit(form);
@@ -469,9 +469,9 @@ const Section = ({ title, children }) => (
 const inputCls = 'w-full px-3 py-2 text-sm bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 const difficultyActive = {
-    easy: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
-    medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
-    hard: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+    Easy: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+    Medium: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+    Hard: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
 };
 
 export default ProblemCreateForm;

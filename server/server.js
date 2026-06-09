@@ -6,12 +6,28 @@ import connectDB from "./config/db.js";
 import connectRedis from "./config/redis.js";
 import passport from "passport";
 import { setupPassport } from "./config/passport.js";
+import { createServer } from 'http';
+import { initSocket } from "./config/socket.js";
+import { submissionQueueEvents } from "./config/queues.js";
 
 dotenv.config({
     path: "./.env"
 });
 
 const app = express();
+
+const httpServer = createServer(app);
+const io = initSocket(httpServer);
+
+submissionQueueEvents.on('completed', ({ returnvalue }) => {
+    if (!returnvalue?.submissionId) return;
+    // console.log(`Submission job completed (${returnvalue.submissionId}):`, returnvalue);
+    io.to(`submission:${returnvalue.submissionId}`).emit('submissionResult', returnvalue);
+});
+
+submissionQueueEvents.on('failed', ({ jobId, failedReason }) => {
+    console.error(`Submission job failed (${jobId}):`, failedReason);
+});
 
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000')
     .split(',')
@@ -80,7 +96,7 @@ const initializeConnection = async () => {
         ]);
         console.log("Connected to Redis successfully.");
 
-        app.listen(PORT, () => {
+        httpServer.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });
     } catch (error) {

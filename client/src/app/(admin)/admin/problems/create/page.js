@@ -40,7 +40,7 @@ export default function CreateProblemPage() {
     try {
       setLoading(true);
       setError(null);
-      console.log("Submitting form with data:", form);
+      // console.log("Submitting form with data:", form);
       await apiFetch('problem/create', {
         method: 'POST',
         body: JSON.stringify(toApiPayload(form)),
