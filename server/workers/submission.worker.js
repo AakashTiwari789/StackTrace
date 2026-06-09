@@ -14,7 +14,7 @@ const LANG_MAP = { cpp: 54, python: 71, javascript: 63, java: 62 };
 
 await connectDB();
 
-new Worker('submissionQueue', async (job) => {
+const worker = new Worker('submissionQueue', async (job) => {
     const { submissionId, code, language, problemId } = job.data;
 
     // console.log(`Processing submission ${submissionId} for problem ${problemId} in language ${language}`);
@@ -147,3 +147,9 @@ new Worker('submissionQueue', async (job) => {
         password: process.env.REDIS_PASS
     }
 });
+
+worker.on('failed', (job, err) => {
+    console.error(`Job ${job.id} failed:`, err);
+});
+
+console.log("Worker initialized successfully.");

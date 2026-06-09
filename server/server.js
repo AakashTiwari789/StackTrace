@@ -9,6 +9,7 @@ import { setupPassport } from "./config/passport.js";
 import { createServer } from 'http';
 import { initSocket } from "./config/socket.js";
 import { submissionQueueEvents } from "./config/queues.js";
+import "./workers/submission.worker.js";
 
 dotenv.config({
     path: "./.env"
