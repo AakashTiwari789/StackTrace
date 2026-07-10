@@ -23,12 +23,22 @@ const io = initSocket(httpServer);
 submissionQueueEvents.on('completed', ({ returnvalue }) => {
     if (!returnvalue) return;
 
-    if (returnvalue.runId) {
+    // BullMQ QueueEvents delivers the worker return value as a JSON string
+    // (it's stored serialized in Redis). Parse it before accessing properties.
+    let result;
+    try {
+        result = typeof returnvalue === 'string' ? JSON.parse(returnvalue) : returnvalue;
+    } catch {
+        console.error('Failed to parse returnvalue from QueueEvents:', returnvalue);
+        return;
+    }
+
+    if (result.runId) {
         // Run result → bottom panel coloured case tabs
-        io.to(`run:${returnvalue.runId}`).emit('runResult', returnvalue);
-    } else if (returnvalue.submissionId) {
-        // Submit result → left panel Submissions tab
-        io.to(`submission:${returnvalue.submissionId}`).emit('submissionResult', returnvalue);
+        io.to(`run:${result.runId}`).emit('runResult', result);
+    } else if (result.submissionId) {
+        // Submit result → left panel Result tab
+        io.to(`submission:${result.submissionId}`).emit('submissionResult', result);
     }
 });
 

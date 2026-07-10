@@ -80,3 +80,27 @@ export const runCode = async (req, res) => {
         throw new ApiError(500, `Failed to run code: ${error.message}`);
     }
 };
+
+// ── Get my submissions ────────────────────────────────────────────────────────
+// Returns the authenticated user's past submissions for a given problem.
+export const getMySubmissions = async (req, res) => {
+    const { problemId } = req.params;
+    const { limit = 20 } = req.query;
+
+    try {
+        const submissions = await Submission.find({
+            userId: req.user.userId,
+            problemId,
+        })
+            .select('language code status verdict submissionTime createdAt')
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit, 10));
+
+        return res.status(200).json(
+            new ApiResponse(200, { submissions }, 'Submissions fetched successfully')
+        );
+    } catch (error) {
+        console.error('Error fetching submissions', error);
+        throw new ApiError(500, `Failed to fetch submissions: ${error.message}`);
+    }
+};
