@@ -14,7 +14,7 @@ router.route('/:problemId/toggle-premium').patch(authenticateAdmin, togglePremiu
 
 router.route('/:slug/test-cases').get(authenticateAdmin, getTestCases);
 
-router.route('/').get(getAllProblems);
+router.route('/').get(optionalAuthenticateUser, getAllProblems);
 
 router.route('/:slug').get(optionalAuthenticateUser, getProblemBySlug);
 

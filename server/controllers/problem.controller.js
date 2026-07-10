@@ -138,7 +138,15 @@ export const updateProblem = async (req, res) => {
 
 export const getAllProblems = async (req, res) => {
     try {
-        const problems = await Problem.find().select("title slug difficulty tags isPublished order acceptanceRate isPremium createdBy");
+        const isAdmin = req.user?.role === 'admin';
+
+        // Regular users only see published problems.
+        // Admins see everything (useful for the admin dashboard).
+        const filter = isAdmin ? {} : { isPublished: true };
+
+        const problems = await Problem.find(filter)
+            .select("title slug difficulty tags isPublished order acceptanceRate isPremium createdBy");
+
         res.status(200).json(new ApiResponse(
             200,
             { problems },
