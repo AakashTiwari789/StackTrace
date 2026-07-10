@@ -245,17 +245,38 @@ export const getTestCases = async (req, res) => {
     }
 };
 
+// Returns ALL test cases (visible + hidden) — used by Submit
 export const getTestCasesByProblemId = async (problemId) => {
     try {
-        const problem = await Problem.findById(problemId);
+        const problem = await Problem.findById(problemId)
+            .select('sampleTestCases testCases');
         if (!problem) {
             throw new ApiError(404, "Problem not found");
         }
 
-        return problem.testCases;
+        // Combine visible + hidden so submission judges every case
+        return [
+            ...(problem.sampleTestCases ?? []),
+            ...(problem.testCases ?? []),
+        ];
     } catch (error) {
         console.error("Error fetching problem test cases:", error);
         throw new ApiError(500, `Failed to fetch test cases: ${error.message}`);
+    }
+};
+
+// Returns ONLY visible (sample) test cases — used by Run
+export const getSampleTestCasesByProblemId = async (problemId) => {
+    try {
+        const problem = await Problem.findById(problemId).select('sampleTestCases');
+        if (!problem) {
+            throw new ApiError(404, "Problem not found");
+        }
+
+        return problem.sampleTestCases ?? [];
+    } catch (error) {
+        console.error("Error fetching sample test cases:", error);
+        throw new ApiError(500, `Failed to fetch sample test cases: ${error.message}`);
     }
 };
 

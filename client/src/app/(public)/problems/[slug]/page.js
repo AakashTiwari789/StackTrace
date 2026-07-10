@@ -1,23 +1,30 @@
 "use client";
 import React, { useState, useEffect, use } from 'react';
-import {
-    Group,
-    Panel,
-    Separator,
-} from "react-resizable-panels";
+import { Group, Panel, Separator } from "react-resizable-panels";
 import Editor from "@monaco-editor/react";
 import apiFetch from '@/services/api';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { io } from 'socket.io-client';
+import { useTheme } from '@/components/ThemeProvider';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Top-level page
+// ─────────────────────────────────────────────────────────────────────────────
 const ProblemPage = ({ params }) => {
+    const [problem, setProblem]           = useState(null);
+    const [loading, setLoading]           = useState(true);
+    const [error, setError]               = useState(null);
 
-    const [problem, setProblem] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    // Submit state
+    const [submissionResult, setSubmissionResult] = useState(null);
+    const [isSubmitting, setIsSubmitting]         = useState(false);
 
-    const [verdict, setVerdict] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    // Run state
+    const [runResult, setRunResult]   = useState(null);
+    const [isRunning, setIsRunning]   = useState(false);
+
+    // Left panel tab
+    const [leftTab, setLeftTab] = useState('description'); // 'description' | 'submissions'
 
     const { slug } = use(params);
 
@@ -25,208 +32,359 @@ const ProblemPage = ({ params }) => {
         const fetchProblem = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/problem/${slug}`, {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                });
+                const response = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/problem/${slug}`,
+                    { method: "GET", headers: { "Content-Type": "application/json" } }
+                );
                 const data = await response.json();
-                // console.log("Fetched problem data:", data);
                 if (response.ok) {
                     setProblem(data.data.problem);
                 } else {
-                    console.error("Failed to fetch problem:", data.message);
                     setError(data.message || "Failed to fetch problem");
                 }
-            } catch (error) {
-                console.error("Error fetching problem:", error);
+            } catch (err) {
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchProblem();
     }, [slug]);
-    // console.log("Problem page for problem:", problem);
 
-    if (loading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <h2 className="text-xl font-semibold">Loading problem...</h2>
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <h2 className="text-xl font-semibold">Loading problem...</h2>
+        </div>
+    );
+    if (error) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <h2 className="text-xl text-red-500">{error}</h2>
+        </div>
+    );
+    if (!problem) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <h2 className="text-xl">Problem not found</h2>
+        </div>
+    );
 
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <h2 className="text-xl text-red-500">{error}</h2>
-            </div>
-        );
-    }
-
-    if (!problem) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <h2 className="text-xl">Problem not found</h2>
-            </div>
-        );
-    }
     return (
-        <Group direction="horizontal" className="h-screen">
+        <Group direction="horizontal" className="h-screen bg-neutral-300 dark:bg-neutral-900">
+            {/* Left panel — Description / Submissions tabs */}
             <Panel defaultSize={35} minSize={20} className='p-1'>
-                <ProblemDescription problem={problem} />
+                <LeftPanel
+                    problem={problem}
+                    leftTab={leftTab}
+                    setLeftTab={setLeftTab}
+                    submissionResult={submissionResult}
+                    isSubmitting={isSubmitting}
+                />
             </Panel>
-            <Separator className="w-1 bg-neutral-700 hover:bg-blue-500 cursor-col-resize transition-colors" />
-            {/* Editor + IO — nested vertical split */}
-            <Panel defaultSize={40} minSize={25} className='p-1'>
+
+            <Separator className="w-1 bg-neutral-500 dark:bg-neutral-700 hover:bg-blue-500 cursor-col-resize transition-colors" />
+
+            {/* Right panel — Editor + bottom test/run panel */}
+            <Panel defaultSize={65} minSize={25} className='p-1'>
                 <Group orientation="vertical" className="h-full gap-1">
                     <Panel defaultSize={65} minSize={35}>
                         <CodeEditor
                             problem={problem}
-                            setVerdict={setVerdict}
+                            // Submit
+                            setSubmissionResult={setSubmissionResult}
                             isSubmitting={isSubmitting}
                             setIsSubmitting={setIsSubmitting}
+                            setLeftTab={setLeftTab}
+                            // Run
+                            setRunResult={setRunResult}
+                            isRunning={isRunning}
+                            setIsRunning={setIsRunning}
                         />
                     </Panel>
 
-                    <Separator />
+                    <Separator className='h-1  bg-neutral-500 dark:bg-neutral-700 hover:bg-blue-500 cursor-row-resize transition-colors' />
 
-                    <Panel defaultSize={30} minSize={15}>
+                    <Panel defaultSize={35} minSize={15}>
                         <TestCasePanel
                             testCases={problem.sampleTestCases}
-                            verdict={verdict}
+                            runResult={runResult}
+                            isRunning={isRunning}
                             isSubmitting={isSubmitting}
                         />
                     </Panel>
                 </Group>
             </Panel>
         </Group>
-    )
-}
+    );
+};
 
-const ProblemDescription = ({ problem }) => {
+// ─────────────────────────────────────────────────────────────────────────────
+// Left panel — tabbed: Description | Submissions
+// ─────────────────────────────────────────────────────────────────────────────
+const LeftPanel = ({ problem, leftTab, setLeftTab, submissionResult, isSubmitting }) => {
+    const TABS = ['description', 'submissions'];
+
     return (
-        <div className='p-4 bg-white dark:bg-neutral-800 rounded-lg shadow-md text-left'>
-            <h2 className='text-2xl font-semibold mb-2 text-gray-800 dark:text-gray-200'>{problem.order}.{problem?.title}</h2>
-            <span className={`px-2 py-1 text-sm font-medium rounded ${problem.difficulty === 'Easy' ? 'bg-green-100 text-green-800' : problem.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                {problem.difficulty}
-            </span>
-            <div className='text-gray-700 dark:text-gray-300 my-4'>
-                <h3 className='font-semibold'>Statement:</h3>
-                <MarkdownRenderer content={problem?.statement || ""} />
-            </div>
-            <div className='text-gray-700 dark:text-gray-300 mb-4'>
-                <h3 className='font-semibold'>Input Format:</h3>
-                <MarkdownRenderer content={problem?.inputFormat || ""} />
-            </div>
-            <div className='text-gray-700 dark:text-gray-300 mb-4'>
-                <h3 className='font-semibold'>Output Format:</h3>
-                <MarkdownRenderer content={problem?.outputFormat || ""} />
-            </div>
-            <div className='text-gray-700 dark:text-gray-300 mb-4'>
-                <h3 className='font-semibold'>Constraints:</h3>
-                <MarkdownRenderer content={problem?.constraints || ""} />
-            </div>
-            <div className='text-gray-700 dark:text-gray-300 mb-4'>
-                <h3 className='font-semibold'>Sample Test Cases:</h3>
-                {problem?.sampleTestCases.map((testCase, index) => (
-                    <div key={index} className='mb-2'>
-                        <p><strong>Input:</strong> {testCase.input}</p>
-                        <p><strong>Output:</strong> {testCase.output}</p>
-                    </div>
+        <div className='h-full flex flex-col bg-white dark:bg-neutral-800 rounded-lg shadow-md overflow-hidden'>
+            {/* Tab bar */}
+            <div className='flex border-b border-gray-200 dark:border-neutral-700 flex-shrink-0'>
+                {TABS.map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setLeftTab(tab)}
+                        className={`px-5 py-3 text-sm font-medium capitalize transition-colors ${
+                            leftTab === tab
+                                ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                        }`}
+                    >
+                        {tab}
+                        {tab === 'submissions' && (submissionResult || isSubmitting) && (
+                            <span className={`ml-2 w-2 h-2 rounded-full inline-block ${
+                                isSubmitting
+                                    ? 'bg-yellow-400 animate-pulse'
+                                    : submissionResult?.status === 'Accepted'
+                                        ? 'bg-emerald-500'
+                                        : 'bg-red-500'
+                            }`} />
+                        )}
+                    </button>
                 ))}
+            </div>
+
+            {/* Tab content */}
+            <div className='flex-1 overflow-y-auto p-4 text-left'>
+                {leftTab === 'description' ? (
+                    <DescriptionTab problem={problem} />
+                ) : (
+                    <SubmissionsTab submissionResult={submissionResult} isSubmitting={isSubmitting} />
+                )}
             </div>
         </div>
     );
-}
+};
 
-const CodeEditor = ({ problem, setVerdict, isSubmitting, setIsSubmitting }) => {
-    const templates = {
-        cpp: `#include <bits/stdc++.h>
-    using namespace std;
+// ── Description tab ───────────────────────────────────────────────────────────
+const DescriptionTab = ({ problem }) => (
+    <>
+        <h2 className='text-2xl font-semibold mb-2 text-gray-800 dark:text-gray-200'>
+            {problem.order}. {problem?.title}
+        </h2>
+        <span className={`px-2 py-1 text-sm font-medium rounded ${
+            problem.difficulty === 'Easy'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                : problem.difficulty === 'Medium'
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+        }`}>
+            {problem.difficulty}
+        </span>
 
-    int main() {
+        <div className='text-gray-700 dark:text-gray-300 my-4'>
+            <h3 className='font-semibold'>Statement:</h3>
+            <MarkdownRenderer content={problem?.statement || ""} />
+        </div>
+        <div className='text-gray-700 dark:text-gray-300 mb-4'>
+            <h3 className='font-semibold'>Input Format:</h3>
+            <MarkdownRenderer content={problem?.inputFormat || ""} />
+        </div>
+        <div className='text-gray-700 dark:text-gray-300 mb-4'>
+            <h3 className='font-semibold'>Output Format:</h3>
+            <MarkdownRenderer content={problem?.outputFormat || ""} />
+        </div>
+        <div className='text-gray-700 dark:text-gray-300 mb-4'>
+            <h3 className='font-semibold'>Constraints:</h3>
+            <MarkdownRenderer content={problem?.constraints || ""} />
+        </div>
+        <div className='text-gray-700 dark:text-gray-300 mb-4'>
+            <h3 className='font-semibold mb-2'>Sample Test Cases:</h3>
+            {problem?.sampleTestCases.map((tc, i) => (
+                <div key={i} className='mb-3 p-3 bg-gray-50 dark:bg-neutral-900 rounded-lg text-sm font-mono'>
+                    <p className='text-gray-500 dark:text-gray-400 text-xs mb-1'>Example {i + 1}</p>
+                    <p><span className='font-semibold text-gray-700 dark:text-gray-300'>Input: </span>{tc.input}</p>
+                    <p><span className='font-semibold text-gray-700 dark:text-gray-300'>Output: </span>{tc.output}</p>
+                    {tc.explanation && (
+                        <p className='mt-1 text-gray-500 dark:text-gray-400 text-xs not-italic font-sans'>{tc.explanation}</p>
+                    )}
+                </div>
+            ))}
+        </div>
+    </>
+);
 
-        return 0;
-    }`,
-
-        python: `def solve():
-        pass
-
-    if __name__ == "__main__":
-        solve()`,
-
-        javascript: `function solve() {
-            
+// ── Submissions tab ───────────────────────────────────────────────────────────
+const SubmissionsTab = ({ submissionResult, isSubmitting }) => {
+    if (isSubmitting && !submissionResult) {
+        return (
+            <div className='flex flex-col items-center justify-center h-64 gap-4 text-gray-500 dark:text-gray-400'>
+                <div className='w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin' />
+                <p className='text-sm'>Judging your submission…</p>
+            </div>
+        );
     }
-    solve();`,
 
-        java: `import java.util.*;
+    if (!submissionResult) {
+        return (
+            <div className='flex flex-col items-center justify-center h-64 text-gray-400 dark:text-gray-600 gap-2'>
+                <p className='text-4xl'>📋</p>
+                <p className='text-sm'>Submit your code to see results here.</p>
+            </div>
+        );
+    }
 
-    public class Main {
-        public static void main(String[] args) {
+    const { status, verdict } = submissionResult;
+    const accepted = status === 'Accepted';
 
-        }
-    }`,
+    return (
+        <div className='space-y-4'>
+            {/* Status header */}
+            <div className={`p-4 rounded-xl ${
+                accepted
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+            }`}>
+                <p className={`text-2xl font-bold ${accepted ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {accepted ? '✅' : '❌'} {status}
+                </p>
+                <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
+                    {verdict?.passedCount} / {verdict?.totalCount} test cases passed
+                </p>
+            </div>
+
+            {/* Stats */}
+            <div className='flex gap-4 text-sm'>
+                <div className='bg-gray-100 dark:bg-neutral-700 rounded-lg px-4 py-2'>
+                    <p className='text-xs text-gray-400 dark:text-gray-500'>Runtime</p>
+                    <p className='font-semibold text-gray-800 dark:text-gray-200'>
+                        {verdict?.runtime ? `${(verdict.runtime * 1000).toFixed(0)} ms` : 'N/A'}
+                    </p>
+                </div>
+                <div className='bg-gray-100 dark:bg-neutral-700 rounded-lg px-4 py-2'>
+                    <p className='text-xs text-gray-400 dark:text-gray-500'>Memory</p>
+                    <p className='font-semibold text-gray-800 dark:text-gray-200'>
+                        {verdict?.memory ? `${(verdict.memory / 1024).toFixed(1)} MB` : 'N/A'}
+                    </p>
+                </div>
+            </div>
+
+            {/* Failed case */}
+            {!accepted && verdict?.failedCase && (
+                <div className='space-y-3'>
+                    <h4 className='text-sm font-semibold text-gray-700 dark:text-gray-300'>Failed Test Case</h4>
+                    {[
+                        { label: 'Input', value: verdict.failedCase.input },
+                        { label: 'Expected Output', value: verdict.failedCase.expectedOutput },
+                        { label: 'Your Output', value: verdict.failedCase.actualOutput },
+                    ].map(({ label, value }) => (
+                        <div key={label}>
+                            <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>{label}</p>
+                            <pre className='text-xs font-mono bg-gray-100 dark:bg-neutral-900 p-3 rounded-lg whitespace-pre-wrap text-gray-800 dark:text-gray-200 overflow-x-auto'>
+                                {value || '(empty)'}
+                            </pre>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Compile / runtime error */}
+            {verdict?.error && (
+                <div>
+                    <p className='text-xs text-gray-400 dark:text-gray-500 mb-1'>Error</p>
+                    <pre className='text-xs font-mono bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-3 rounded-lg whitespace-pre-wrap overflow-x-auto'>
+                        {verdict.error}
+                    </pre>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Code editor with Run + Submit buttons
+// ─────────────────────────────────────────────────────────────────────────────
+const CodeEditor = ({
+    problem,
+    setSubmissionResult, isSubmitting, setIsSubmitting, setLeftTab,
+    setRunResult, isRunning, setIsRunning,
+}) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
+    const WS_URL = process.env.NEXT_PUBLIC_API_BASE_URL_WS || 'http://localhost:5000';
+
+    const templates = {
+        cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n\n    return 0;\n}`,
+        python: `def solve():\n    pass\n\nif __name__ == "__main__":\n    solve()`,
+        javascript: `function solve() {\n    \n}\nsolve();`,
+        java: `import java.util.*;\n\npublic class Main {\n    public static void main(String[] args) {\n\n    }\n}`,
     };
 
     const [language, setLanguage] = useState("cpp");
-    const [code, setCode] = useState(templates.cpp);
+    const [code, setCode]         = useState(templates.cpp);
 
     const handleLanguageChange = (e) => {
-        const newLanguage = e.target.value;
-        setLanguage(newLanguage);
-        setCode(templates[newLanguage]);
+        const lang = e.target.value;
+        setLanguage(lang);
+        setCode(templates[lang]);
     };
 
-    const handleProblemSubmit = async () => {
+    // ── Run handler ───────────────────────────────────────────────────────────
+    const handleRun = async () => {
+        setIsRunning(true);
+        setRunResult(null);
         try {
-            setIsSubmitting(true);
-            setVerdict(null); // Clear previous results
-
-            // 1. Send code and language to the backend
-            const response = await apiFetch(`submit/${problem._id}/submit`, { // Ensure this matches your route
-                method: "POST",
-                body: JSON.stringify({
-                    code: code,
-                    language: language
-                }),
+            const resp = await apiFetch(`submit/${problem._id}/run`, {
+                method: 'POST',
+                body: JSON.stringify({ code, language }),
             });
+            const { runId } = resp.data;
 
-            // Assuming your ApiResponse looks like: { data: { submissionId: "..." } }
-            const submissionId = response.data.submissionId;
+            const socket = io(WS_URL);
+            socket.emit('join', `run:${runId}`);
+            socket.on('runResult', (data) => {
+                setRunResult(data);
+                setIsRunning(false);
+                socket.disconnect();
+            });
+        } catch (err) {
+            console.error('Run error:', err);
+            setIsRunning(false);
+        }
+    };
 
-            // 2. Connect to WebSocket
-            const socket = io(process.env.NEXT_PUBLIC_API_BASE_URL_WS || "http://localhost:5000");
+    // ── Submit handler ────────────────────────────────────────────────────────
+    const handleSubmit = async () => {
+        setIsSubmitting(true);
+        setSubmissionResult(null);
+        setLeftTab('submissions'); // Auto-switch left panel
+        try {
+            const resp = await apiFetch(`submit/${problem._id}/submit`, {
+                method: 'POST',
+                body: JSON.stringify({ code, language }),
+            });
+            const { submissionId } = resp.data;
 
-            // Join the specific submission room
+            const socket = io(WS_URL);
             socket.emit('join', `submission:${submissionId}`);
-
-            // 3. Listen for the backend event
             socket.on('submissionResult', (data) => {
-                setVerdict(data);
-                setIsSubmitting(false); // Stop loading
-                socket.disconnect(); // Clean up connection
+                setSubmissionResult(data);
+                setIsSubmitting(false);
+                socket.disconnect();
             });
-
-        } catch (error) {
-            console.error("Error submitting problem:", error);
+        } catch (err) {
+            console.error('Submit error:', err);
             setIsSubmitting(false);
         }
-    }
+    };
+
+    const busy = isRunning || isSubmitting;
 
     return (
-        <div className="h-full flex flex-col bg-neutral-900 rounded-lg overflow-hidden">
-
+        <div className="h-full flex flex-col bg-neutral-100  dark:bg-neutral-900 rounded-lg overflow-hidden">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-neutral-700">
-
                 <select
                     value={language}
                     onChange={handleLanguageChange}
-                    className="px-3 py-1 rounded bg-neutral-800 text-white border border-neutral-600 outline-none"
+                    disabled={busy}
+                    className="px-3 py-1 rounded bg-neutral-200 dark:bg-neutral-800 text-black dark:text-white border border-neutral-600 outline-none text-sm disabled:opacity-50"
                 >
                     <option value="cpp">C++</option>
                     <option value="python">Python</option>
@@ -235,21 +393,41 @@ const CodeEditor = ({ problem, setVerdict, isSubmitting, setIsSubmitting }) => {
                 </select>
 
                 <div className="flex gap-2">
+                    {/* Run button */}
                     <button
-                        className="px-4 py-1 rounded bg-neutral-700 hover:bg-neutral-600"
+                        onClick={handleRun}
+                        disabled={busy}
+                        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                            busy
+                                ? 'bg-emerald-700 text-white/60 cursor-not-allowed'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                        }`}
                     >
-                        Run
+                        {isRunning ? (
+                            <span className="flex items-center gap-1.5">
+                                <span className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                                Running…
+                            </span>
+                        ) : 'Run ▶'}
                     </button>
 
-                    {isSubmitting ? (
-                        <button className="px-4 py-1 rounded bg-blue-500 text-white cursor-not-allowed opacity-70" disabled>
-                            Judging...
-                        </button>
-                    ) : (
-                        <button className="px-4 py-1 rounded bg-blue-500 text-white hover:bg-blue-600" onClick={handleProblemSubmit}>
-                            Submit
-                        </button>
-                    )}
+                    {/* Submit button */}
+                    <button
+                        onClick={handleSubmit}
+                        disabled={busy}
+                        className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
+                            busy
+                                ? 'bg-blue-700 text-white/60 cursor-not-allowed'
+                                : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        }`}
+                    >
+                        {isSubmitting ? (
+                            <span className="flex items-center gap-1.5">
+                                <span className="w-3 h-3 border-2 border-white/50 border-t-white rounded-full animate-spin" />
+                                Judging…
+                            </span>
+                        ) : 'Submit'}
+                    </button>
                 </div>
             </div>
 
@@ -258,24 +436,17 @@ const CodeEditor = ({ problem, setVerdict, isSubmitting, setIsSubmitting }) => {
                 <Editor
                     height="100%"
                     language={language}
-                    theme="vs-dark"
+                    theme={isDark ? 'vs-dark' : 'light'}
                     value={code}
-                    onChange={(value) => setCode(value || "")}
+                    onChange={(val) => setCode(val || "")}
                     options={{
-                        minimap: {
-                            enabled: false,
-                        },
-                        fontSize: 15,
+                        minimap: { enabled: false },
+                        fontSize: 14,
                         automaticLayout: true,
                         scrollBeyondLastLine: false,
-                        padding: {
-                            top: 16,
-                        },
+                        padding: { top: 16 },
                         tabSize: 4,
-                        scrollbar: {
-                            vertical: "auto",
-                            horizontal: "auto",
-                        },
+                        scrollbar: { vertical: 'auto', horizontal: 'auto' },
                     }}
                 />
             </div>
@@ -283,103 +454,142 @@ const CodeEditor = ({ problem, setVerdict, isSubmitting, setIsSubmitting }) => {
     );
 };
 
-const TestCasePanel = ({ testCases, verdict, isSubmitting }) => {
-    // We use either a number (for test case index) or the string "result"
+// ─────────────────────────────────────────────────────────────────────────────
+// Bottom panel — test cases (idle) / per-case run results (after Run)
+// ─────────────────────────────────────────────────────────────────────────────
+const TestCasePanel = ({ testCases, runResult, isRunning, isSubmitting }) => {
     const [activeTab, setActiveTab] = useState(0);
 
-    // Automatically switch to the result tab when a submission begins
+    // Auto-focus first case tab when run result arrives
     useEffect(() => {
-        if (isSubmitting) {
-            setActiveTab("result");
-        }
-    }, [isSubmitting]);
+        if (runResult) setActiveTab(0);
+    }, [runResult]);
+
+    const cases = runResult?.verdict?.cases ?? null;
 
     return (
-        <div className="h-full flex flex-col bg-white dark:bg-neutral-800 rounded-lg shadow-md">
-            {/* Tabs Header */}
-            <div className="flex border-b border-neutral-300 dark:border-neutral-700 overflow-x-auto">
-                {testCases.map((_, index) => (
-                    <button
-                        key={index}
-                        onClick={() => setActiveTab(index)}
-                        className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === index
-                                ? "border-b-2 border-blue-500 text-blue-500"
-                                : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
+        <div className="h-full flex flex-col bg-white dark:bg-neutral-800 rounded-lg shadow-md overflow-hidden">
+            {/* Tab bar */}
+            <div className="flex border-b border-neutral-200 dark:border-neutral-700 overflow-x-auto flex-shrink-0">
+                {testCases.map((_, i) => {
+                    const caseResult = cases?.[i];
+                    return (
+                        <button
+                            key={i}
+                            onClick={() => setActiveTab(i)}
+                            className={`px-4 py-2 text-sm font-medium whitespace-nowrap flex items-center gap-1.5 transition-colors ${
+                                activeTab === i
+                                    ? 'border-b-2 border-blue-500 text-blue-500'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                             }`}
-                    >
-                        Case {index + 1}
-                    </button>
-                ))}
-
-                {/* Submission Result Tab - visible if result exists or is processing */}
-                {(verdict || isSubmitting) && (
-                    <button
-                        onClick={() => setActiveTab("result")}
-                        className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${activeTab === "result"
-                                ? "border-b-2 border-green-500 text-green-500"
-                                : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
-                            }`}
-                    >
-                        Submission Result
-                    </button>
-                )}
+                        >
+                            Case {i + 1}
+                            {caseResult && (
+                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                    caseResult.passed ? 'bg-emerald-500' : 'bg-red-500'
+                                }`} />
+                            )}
+                        </button>
+                    );
+                })}
             </div>
 
-            {/* Tab Content */}
+            {/* Content */}
             <div className="flex-1 overflow-auto p-4">
-                {activeTab === "result" ? (
-                    // RESULT VIEW
-                    <div className="h-full">
-                        {isSubmitting ? (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                <p>Evaluating your code on hidden test cases...</p>
-                            </div>
-                        ) : verdict ? (
-                            <div className="animate-fade-in">
-                                <h2 className={`text-2xl font-bold mb-4 ${verdict.status === 'Accepted' ? 'text-green-500' : 'text-red-500'}`}>
-                                    {verdict.status}
-                                </h2>
-
-                                <div className="bg-neutral-100 dark:bg-neutral-900 p-4 rounded-lg space-y-2 text-sm">
-                                    <p className="text-gray-700 dark:text-gray-300">
-                                        <span className="font-semibold">Test Cases Passed: </span>
-                                        {verdict.verdict?.passedCount} / {verdict.verdict?.totalCount}
-                                    </p>
-
-                                    {/* {verdict.verdict?.error && (
-                                        <div className="mt-4">
-                                            <h3 className="font-semibold text-red-400 mb-1">Error Output:</h3>
-                                            <pre className="bg-red-950/20 text-red-400 p-3 rounded whitespace-pre-wrap overflow-x-auto">
-                                                {verdict.verdict.error}
-                                            </pre>
-                                        </div>
-                                    )} */}
-                                </div>
-                            </div>
-                        ) : null}
-                    </div>
-                ) : (
-                    // TEST CASE VIEW
-                    <div>
-                        <h3 className="font-semibold text-lg mb-2 text-gray-800 dark:text-gray-200">
-                            Input
-                        </h3>
-                        <pre className="bg-neutral-100 dark:bg-neutral-900 p-3 rounded mb-4 whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                            {testCases[activeTab]?.input}
-                        </pre>
-
-                        <h3 className="font-semibold text-lg mb-2 text-gray-800 dark:text-gray-200">
-                            Expected Output
-                        </h3>
-                        <pre className="bg-neutral-100 dark:bg-neutral-900 p-3 rounded whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                            {testCases[activeTab]?.output}
-                        </pre>
+                {/* Running spinner — shown while isRunning */}
+                {isRunning && (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-500 dark:text-gray-400">
+                        <div className="w-7 h-7 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm">Running on sample test cases…</p>
                     </div>
                 )}
+
+                {/* Submit in-progress — show minimal message */}
+                {!isRunning && isSubmitting && (
+                    <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 dark:text-gray-600">
+                        <div className="w-7 h-7 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm">Judging submission…</p>
+                    </div>
+                )}
+
+                {/* Idle or after Run */}
+                {!isRunning && !isSubmitting && (() => {
+                    const tc       = testCases[activeTab];
+                    const caseRes  = cases?.[activeTab];
+
+                    if (!caseRes) {
+                        // Idle — show sample input/expected output
+                        return (
+                            <div className="space-y-3 text-sm">
+                                <div>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Input</p>
+                                    <pre className="bg-gray-50 dark:bg-neutral-900 text-gray-800 dark:text-gray-200 p-3 rounded-lg font-mono whitespace-pre-wrap">{tc?.input}</pre>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Expected Output</p>
+                                    <pre className="bg-gray-50 dark:bg-neutral-900 text-gray-800 dark:text-gray-200 p-3 rounded-lg font-mono whitespace-pre-wrap">{tc?.output}</pre>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // After Run — show full per-case result
+                    return (
+                        <div className="space-y-3 text-sm">
+                            {/* Pass / Fail badge */}
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${
+                                caseRes.passed
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            }`}>
+                                {caseRes.passed ? '✅ Passed' : '❌ Failed'}
+                                {caseRes.time > 0 && (
+                                    <span className="text-gray-400 dark:text-gray-500 font-normal">
+                                        · {(caseRes.time * 1000).toFixed(0)} ms
+                                        {caseRes.memory > 0 && ` · ${(caseRes.memory / 1024).toFixed(1)} MB`}
+                                    </span>
+                                )}
+                            </div>
+
+                            {/* Input */}
+                            <div>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Input</p>
+                                <pre className="bg-gray-50 dark:bg-neutral-900 text-gray-800 dark:text-gray-200 p-3 rounded-lg font-mono text-xs whitespace-pre-wrap">{caseRes.input || '(empty)'}</pre>
+                            </div>
+
+                            {/* Expected output */}
+                            <div>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Expected Output</p>
+                                <pre className="bg-gray-50 dark:bg-neutral-900 text-gray-800 dark:text-gray-200 p-3 rounded-lg font-mono text-xs whitespace-pre-wrap">{caseRes.expectedOutput || '(empty)'}</pre>
+                            </div>
+
+                            {/* Your output */}
+                            <div>
+                                <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Your Output</p>
+                                <pre className={`p-3 rounded-lg font-mono text-xs whitespace-pre-wrap ${
+                                    caseRes.passed
+                                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300'
+                                        : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300'
+                                }`}>
+                                    {caseRes.actualOutput || '(empty)'}
+                                </pre>
+                            </div>
+
+                            {/* Stderr / Compile error */}
+                            {(caseRes.stderr || caseRes.compileOutput) && (
+                                <div>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Error</p>
+                                    <pre className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-3 rounded-lg font-mono text-xs whitespace-pre-wrap">
+                                        {caseRes.compileOutput || caseRes.stderr}
+                                    </pre>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
             </div>
         </div>
     );
 };
 
-export default ProblemPage
+export default ProblemPage;

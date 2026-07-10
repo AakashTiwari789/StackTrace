@@ -21,9 +21,15 @@ const httpServer = createServer(app);
 const io = initSocket(httpServer);
 
 submissionQueueEvents.on('completed', ({ returnvalue }) => {
-    if (!returnvalue?.submissionId) return;
-    // console.log(`Submission job completed (${returnvalue.submissionId}):`, returnvalue);
-    io.to(`submission:${returnvalue.submissionId}`).emit('submissionResult', returnvalue);
+    if (!returnvalue) return;
+
+    if (returnvalue.runId) {
+        // Run result → bottom panel coloured case tabs
+        io.to(`run:${returnvalue.runId}`).emit('runResult', returnvalue);
+    } else if (returnvalue.submissionId) {
+        // Submit result → left panel Submissions tab
+        io.to(`submission:${returnvalue.submissionId}`).emit('submissionResult', returnvalue);
+    }
 });
 
 submissionQueueEvents.on('failed', ({ jobId, failedReason }) => {
