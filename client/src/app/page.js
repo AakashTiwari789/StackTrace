@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { FaCode, FaBolt, FaChartLine, FaTrophy } from "react-icons/fa";
+import { useTheme } from "@/components/ThemeProvider";
 
 // Lazy-load Monaco so it doesn't block the initial page render
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -35,6 +36,8 @@ export default function HomePage() {
     const heroRef = useRef(null);
     const [spotlight, setSpotlight] = useState({ x: 50, y: 50 });
     const [code, setCode] = useState(defaultCode);
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
 
     const handleMouseMove = useCallback((e) => {
         const rect = heroRef.current?.getBoundingClientRect();
@@ -112,15 +115,21 @@ export default function HomePage() {
 
                 {/* Live Monaco editor card */}
                 <div className="relative z-10 mt-16 w-full max-w-2xl mx-auto">
-                    <div className="bg-neutral-900 rounded-2xl border border-neutral-800 shadow-2xl overflow-hidden text-left">
+                    {/* Editor card — intentionally stays dark-themed in light mode for contrast, title bar adapts */}
+                    <div className={`rounded-2xl border shadow-2xl overflow-hidden text-left ${
+                        isDark
+                            ? 'bg-neutral-900 border-neutral-800'
+                            : 'bg-neutral-100 border-neutral-700 shadow-black/20'
+                    }`}>
 
                         {/* Mac-style title bar */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-900/90 backdrop-blur">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-800 bg-neutral-100 dark:bg-neutral-900/90 backdrop-blur">
                             <div className="flex items-center gap-2">
                                 <span className="w-3 h-3 rounded-full bg-red-500" />
                                 <span className="w-3 h-3 rounded-full bg-yellow-400" />
                                 <span className="w-3 h-3 rounded-full bg-green-500" />
-                                <span className="ml-3 text-xs text-neutral-400 font-mono">twoSum.js — StackTrace</span>
+                                <span className="ml-3 text-xs
+                                text-neutral-900 dark:text-neutral-400 font-mono">twoSum.js — StackTrace</span>
                             </div>
                             <span className="text-xs text-neutral-500 font-mono select-none">JavaScript</span>
                         </div>
@@ -132,7 +141,7 @@ export default function HomePage() {
                                 defaultLanguage="javascript"
                                 value={code}
                                 onChange={(val) => setCode(val || "")}
-                                theme="vs-dark"
+                                theme={isDark ? "vs-dark" : "light"}
                                 options={{
                                     minimap: { enabled: false },
                                     fontSize: 13,
@@ -153,8 +162,8 @@ export default function HomePage() {
 
                         {/* Footer bar */}
                         <div className="px-4 py-2.5 border-t border-neutral-800 flex items-center justify-between">
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-900 dark:text-emerald-400">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
                                 Live editor — try editing the code!
                             </span>
                             <Link

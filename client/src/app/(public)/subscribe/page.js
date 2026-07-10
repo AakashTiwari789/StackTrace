@@ -145,7 +145,7 @@ export default function SubscribePage() {
                                         <li key={f.text} className='flex items-start gap-3 text-sm'>
                                             {f.included
                                                 ? <FaCheck className='text-emerald-500 mt-0.5 flex-shrink-0' />
-                                                : <FaTimes className='text-gray-300 dark:text-gray-600 mt-0.5 flex-shrink-0' />
+                                                : <FaTimes className='text-gray-400 dark:text-gray-600 mt-0.5 flex-shrink-0' />
                                             }
                                             <span className={f.included ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400 dark:text-gray-600 line-through'}>{f.text}</span>
                                         </li>

@@ -163,7 +163,7 @@ export default function DevelopersPage() {
                         {apiEndpoints.map((ep, i) => (
                             <div
                                 key={i}
-                                className='flex items-center gap-4 px-5 py-4 border-b border-gray-50 dark:border-neutral-800 last:border-0 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors'
+                                className='flex items-center gap-4 px-5 py-4 border-b border-gray-100 dark:border-neutral-800 last:border-0 hover:bg-gray-50 dark:hover:bg-neutral-800/50 transition-colors'
                             >
                                 <span className={`text-xs font-bold px-2 py-1 rounded font-mono flex-shrink-0 ${methodColor[ep.method]}`}>
                                     {ep.method}
