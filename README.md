@@ -13,7 +13,7 @@ A full-stack competitive coding platform built for practicing data structures an
 
 ## Overview
 
-StackTrace is an online judge platform where users can browse coding problems, write solutions in an integrated code editor, and receive real-time verdicts. It supports multiple programming languages, features a queue-based submission pipeline with Judge0, and delivers results over WebSockets.
+StackTrace is an online judge platform where users can browse coding problems, write solutions in an integrated Monaco code editor, and receive real-time verdicts. It supports multiple programming languages, features a queue-based submission pipeline with Judge0, and delivers results over WebSockets.
 
 ---
 
@@ -23,7 +23,7 @@ StackTrace is an online judge platform where users can browse coding problems, w
 
 - **Problem Solving** — Browse problems by difficulty and tags, read markdown statements with math/LaTeX support, and submit solutions
 - **Real-time Code Evaluation** — BullMQ job queue → Judge0 batch execution → Socket.IO live verdict delivery
-- **Monaco Code Editor** — Full-featured editor with syntax highlighting and multi-language support
+- **Monaco Code Editor** — Full-featured VS Code-like editor with syntax highlighting and multi-language support
 - **Multi-language Support** — C++, Python, JavaScript, and Java
 
 ### Authentication & Security
@@ -33,26 +33,21 @@ StackTrace is an online judge platform where users can browse coding problems, w
 - **Email Verification** — Dual approach with verification links and 6-digit OTP
 - **Session Management** — Per-device session tracking with device/IP info, selective logout, and logout-from-all-devices
 - **Token Revocation** — Redis-backed immediate revocation of access and refresh tokens
+- **isPublished Gate** — Unpublished problems return 404 for non-admin users; admin visibility uses optional JWT auth without blocking public access
 
 ### User Experience
 
 - **Public Profiles** — View any user's profile by username with solve statistics
 - **Profile Customization** — Photo upload via ImageKit, editable profile information
-- **Problem Notes** — Private per-user notes on each problem
-- **Dark Mode** — System-aware theme toggle
+- **Dark / Light Mode** — System-aware theme toggle with flash-free initialization
 - **Resizable Panels** — Split-pane problem view with adjustable editor/description ratio
+- **Interactive Home Page** — Mouse-tracking spotlight effect, live Monaco editor demo (editable, no submit)
 
 ### Admin
 
 - **Problem Management** — Full CRUD with markdown editor, test case management, difficulty/tag assignment
-- **Publish Control** — Toggle problem visibility and premium status
+- **Publish Control** — Toggle problem visibility (isPublished) and premium status
 - **Editorial System** — Attach editorials with optional premium gating and video links
-
-### Planned / Scaffolded
-
-- Contests
-- Leaderboard
-- Premium subscriptions
 
 ---
 
@@ -61,7 +56,7 @@ StackTrace is an online judge platform where users can browse coding problems, w
 | Layer          | Technology                                                              |
 | -------------- | ----------------------------------------------------------------------- |
 | Frontend       | Next.js 16 (App Router), React 19, Tailwind CSS 4                       |
-| Code Editor    | Monaco Editor                                                           |
+| Code Editor    | Monaco Editor (`@monaco-editor/react`)                                |
 | Backend        | Node.js, Express 5                                                      |
 | Database       | MongoDB (Mongoose 9)                                                    |
 | Cache & Queue  | Redis, BullMQ                                                           |
@@ -86,8 +81,8 @@ StackTrace is an online judge platform where users can browse coding problems, w
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/AakashTiwari789/stacktrace.git
-cd stacktrace
+git clone https://github.com/AakashTiwari789/StackTrace.git
+cd StackTrace
 ```
 
 ### 2. Set up the server
@@ -98,7 +93,7 @@ npm install
 cp .env.sample .env
 ```
 
-Edit `server/.env` with your credentials
+Edit `server/.env` with your credentials.
 
 Start the server:
 
@@ -133,18 +128,20 @@ The app will be available at `http://localhost:3000` with the API at `http://loc
 
 ## API Routes
 
-| Method | Endpoint                   | Description               |
-| ------ | -------------------------- | ------------------------- |
-| GET    | `/api/v1/health`         | Health check              |
-| POST   | `/api/v1/auth/register`  | Register a new user       |
-| POST   | `/api/v1/auth/login`     | Login with email/password |
-| POST   | `/api/v1/auth/logout`    | Logout current session    |
-| GET    | `/api/v1/auth/google`    | Google OAuth initiation   |
-| GET    | `/api/v1/user/me`        | Get current user profile  |
-| GET    | `/api/v1/user/:username` | Get public profile        |
-| GET    | `/api/v1/problem`        | List problems             |
-| GET    | `/api/v1/problem/:slug`  | Get problem details       |
-| POST   | `/api/v1/submit`         | Submit a solution         |
+| Method | Endpoint                             | Description                                         |
+| ------ | ------------------------------------ | --------------------------------------------------- |
+| GET    | `/api/v1/health`                   | Health check                                        |
+| POST   | `/api/v1/auth/register`            | Register a new user                                 |
+| POST   | `/api/v1/auth/login`               | Login with email/password                           |
+| POST   | `/api/v1/auth/logout`              | Logout current session                              |
+| GET    | `/api/v1/auth/google`              | Google OAuth initiation                             |
+| GET    | `/api/v1/user/me`                  | Get current user profile                            |
+| GET    | `/api/v1/user/:username`           | Get public profile                                  |
+| GET    | `/api/v1/problem`                  | List all published problems                         |
+| GET    | `/api/v1/problem/:slug`            | Get problem by slug (published only for non-admins) |
+| POST   | `/api/v1/submit/:problemId/submit` | Submit a solution                                   |
+
+> **Auth note:** Public routes use optional JWT auth (`optionalAuthenticateUser`) so admins can access unpublished content without blocking unauthenticated users.
 
 ---
 
@@ -174,7 +171,7 @@ The app will be available at `http://localhost:3000` with the API at `http://loc
 ```
                 ┌─────────────────────────────┐
                 │         Client              │
-                │  Next.js (App Router)       │
+                │  Next.js 16 (App Router)    │
                 │  Monaco Editor  Socket.io-c │
                 └────────────┬────────────▲───┘
                     HTTPS    │            │ WS (verdict)
@@ -208,15 +205,25 @@ The app will be available at `http://localhost:3000` with the API at `http://loc
                 └─────────────────────┘
 ```
 
-**Flow:**
-1. User submit code → POST `/api/v1/submit/:problemId/submit`
-2. API create `Submission` doc (Pending), enqueue BullMQ job
-3. Return `202 + submissionId` → client join Socket room `submission:<id>`
-4. Worker fetch test cases + metadata from MongoDB, batch-POST to Judge0
-5. Worker poll Judge0 until all statuses > 2
-6. Worker update Submission doc in MongoDB
-7. `submissionQueueEvents.on('completed')` fire → `io.to(room).emit('submissionResult')`
-8. Client receive verdict via WebSocket
+**Submission Flow:**
+
+1. User submits code → `POST /api/v1/submit/:problemId/submit`
+2. API creates `Submission` doc (Pending), enqueues BullMQ job
+3. Returns `202 + submissionId` → client joins Socket room `submission:<id>`
+4. Worker fetches test cases + metadata from MongoDB, batch-POSTs to Judge0
+5. Worker polls Judge0 until all statuses > 2
+6. Worker updates Submission doc in MongoDB
+7. `submissionQueueEvents.on('completed')` fires → `io.to(room).emit('submissionResult')`
+8. Client receives verdict via WebSocket
+
+---
+
+## Built by
+
+**Aakash Tiwari**
+
+- GitHub: [@AakashTiwari789](https://github.com/AakashTiwari789)
+- LinkedIn: [aakash-tiwari-in](https://www.linkedin.com/in/aakash-tiwari-in/)
 
 ---
 
