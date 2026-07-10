@@ -1,7 +1,6 @@
 import Router from 'express';
-import { authenticateAdmin } from '../middlewares/auth.middleware.js';
+import { authenticateAdmin, optionalAuthenticateUser } from '../middlewares/auth.middleware.js';
 import { createNewProblem, updateProblem, getAllProblems, getProblemBySlug, togglePublishProblem, togglePremiumProblem, getTestCases } from '../controllers/problem.controller.js';
-import { request } from 'http';
 
 const router = Router();
 
@@ -17,6 +16,6 @@ router.route('/:slug/test-cases').get(authenticateAdmin, getTestCases);
 
 router.route('/').get(getAllProblems);
 
-router.route('/:slug').get(getProblemBySlug).get(authenticateAdmin, getProblemBySlug);
+router.route('/:slug').get(optionalAuthenticateUser, getProblemBySlug);
 
 export default router;

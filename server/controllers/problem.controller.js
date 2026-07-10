@@ -160,6 +160,12 @@ export const getProblemBySlug = async (req, res) => {
             throw new ApiError(404, "Problem not found");
         }
 
+        // Gate unpublished problems: only admins may view them.
+        // Using a strict comparison so a missing/non-admin role always fails.
+        if (!problem.isPublished && req.user?.role !== "admin") {
+            throw new ApiError(404, "Problem not found");
+        }
+
         res.status(200).json(new ApiResponse(
             200,
             { problem },
@@ -167,6 +173,8 @@ export const getProblemBySlug = async (req, res) => {
         ));
     } catch (error) {
         console.error("Error fetching problem by slug:", error);
+        // Re-throw ApiErrors as-is so the correct status code is preserved.
+        if (error instanceof ApiError) throw error;
         throw new ApiError(500, `Failed to fetch problem: ${error.message}`);
     }
 };

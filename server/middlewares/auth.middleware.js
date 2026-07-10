@@ -49,3 +49,22 @@ export const authenticateAdmin = asyncHandler(async (req, res, next) => {
         next();
     });
 });
+
+/**
+ * Soft authentication — populates req.user when a valid token is present,
+ * but never blocks the request if no token is provided.
+ * Use this on public routes that need to behave differently for admins.
+ */
+export const optionalAuthenticateUser = asyncHandler(async (req, res, next) => {
+    const accessToken = req.cookies?.accessToken;
+    if (!accessToken) {
+        return next(); // unauthenticated — let the controller decide
+    }
+    // Re-use the full authenticateUser logic; if the token is invalid/expired
+    // we fall through to next() so the route still works as a public endpoint.
+    try {
+        await authenticateUser(req, res, next);
+    } catch {
+        next();
+    }
+});
