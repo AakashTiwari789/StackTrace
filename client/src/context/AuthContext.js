@@ -32,8 +32,15 @@ export function AuthProvider({ children }) {
     };
 
     const logout = async () => {
-        await authService.logout();
-        setUser(null);
+        try {
+            await authService.logout();
+        } catch (error) {
+            if (!String(error?.message || '').includes('Unauthorized')) {
+                throw error;
+            }
+        } finally {
+            setUser(null);
+        }
     };
 
     const register = async (data) => {

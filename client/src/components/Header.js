@@ -12,6 +12,7 @@ import { useAuth } from "@/context/AuthContext.js";
 
 const menuItems = [
     { name: "Premium", href: "/subscribe" },
+    { name: "Problems", href: "/problems" },
     { name: "Features", href: "/features" },
     { name: "Developers", href: "/developers" },
     { name: "Contact Us", href: "/contact" },
@@ -55,7 +56,7 @@ export default function Header() {
 
     return (
         <>
-            <header className="top-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-gray-100/80 dark:bg-neutral-900/80 backdrop-blur border-b border-gray-200 dark:border-neutral-800">
+            <header className="relative top-0 z-50 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3 bg-gray-100/80 dark:bg-neutral-900/80 backdrop-blur border-b border-gray-200 dark:border-neutral-800">
                 <div className="flex items-center gap-3">
                     <Link href="/" className="inline-flex items-center">
                         <span className="text-xl font-semibold text-gray-900 dark:text-white">StackTrace</span>
@@ -144,7 +145,7 @@ export default function Header() {
 
                 {/* Mobile nav panel */}
                 {open && (
-                    <div className="absolute left-0 right-0 top-full md:hidden border-b border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
+                    <div className="absolute left-0 right-0 top-full z-60 md:hidden border-b border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-sm">
                         <nav className="flex flex-col p-2">
                             <div className="flex items-center justify-between px-2 py-1">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">Theme</span>
@@ -213,9 +214,9 @@ export default function Header() {
                 )}
             </header>
 
-            <div className="z-1000 hidden md:block" >
+            <div className="relative z-1000 hidden md:block" >
                 {subMenuOpen && (
-                    <div className="absolute top-16 right-4 w-32 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-md shadow-lg">
+                    <div className="absolute top-0 right-4 w-32 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-md shadow-lg">
                         {authSubMenuItems.map((item) => (
                             <Link
                                 key={item.name}

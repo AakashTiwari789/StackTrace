@@ -1,9 +1,9 @@
 "use client";
 import apiFetch from '@/services/api';
-import React, { act, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { FiLogOut, FiSmartphone, FiMonitor, FiMapPin, FiClock } from 'react-icons/fi'
 import { useAuth } from '@/context/AuthContext.js';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 const DeviceIcon = ({ deviceInfo }) => {
     const isMobile = deviceInfo?.isMobile || deviceInfo?.device === 'mobile' || deviceInfo?.device === 'tablet';
@@ -57,7 +57,8 @@ const formatTimeAgo = (dateString) => {
 
 const SessionsPage = () => {
 
-    const { user, logout } = useAuth();
+    const { logout } = useAuth();
+    const router = useRouter();
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentSessionId, setCurrentSessionId] = useState(null);
@@ -87,7 +88,12 @@ const SessionsPage = () => {
                 method: 'POST',
                 body: JSON.stringify({ sessionId }),
             });
-            // Refresh the sessions list
+            if (sessionId === currentSessionId) {
+                await logout();
+                router.replace('/');
+                return;
+            }
+
             await fetchSessions();
         } catch (error) {
             console.error('Error logging out session:', error);
@@ -100,10 +106,8 @@ const SessionsPage = () => {
                 method: 'POST',
                 body: JSON.stringify({}),
             });
-            // Refresh the sessions list
-            const router = useRouter();
             await logout();
-            router.replace('/account/login');
+            router.replace('/');
         } catch (error) {
             console.error('Error logging out all sessions:', error);
         }
@@ -201,10 +205,6 @@ const SessionsPage = () => {
                                         aria-label={`Logout ${deviceName}`}
                                         onClick={() => {
                                             handleLogoutSession(s.sessionId);
-                                            if (isCurrentSession) {
-                                                logout();
-                                                redirect('/account/login');
-                                            }
                                         }}
                                     >
                                         <FiLogOut />

@@ -81,13 +81,13 @@ const ProblemSetPage = () => {
                     <div className="relative" ref={filterRef}>
                         <button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                            className="flex items-center gap-2 px-2 py-2 bg-white text-gray-900 dark:bg-neutral-800 dark:text-gray-100 border rounded-lg shadow-sm hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors duration-200"
+                            className="flex items-center gap-2 px-2 py-2 bg-white text-gray-900 dark:bg-neutral-800 dark:text-gray-100 border rounded-lg shadow-sm hover:bg-gray-100 dark:hover:bg-neutral-700 transition-colors duration-200 z-0"
                         >
                             <MdFilterList /> Filter Problems
                         </button>
 
                         {isFilterOpen && (
-                            <div className="absolute top-12 left-0 z-10 p-2 bg-white dark:bg-neutral-800 border rounded-lg shadow-xl flex gap-2">
+                            <div className="absolute top-12 left-0 z-2 p-2 bg-white dark:bg-neutral-800 border rounded-lg shadow-xl flex gap-2">
                                 <select
                                     className="p-2 border rounded bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-neutral-700"
                                     onChange={(e) => setDiffFilter(e.target.value)} value={diffFilter} >
