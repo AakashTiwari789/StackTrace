@@ -22,7 +22,7 @@ transporter.verify((error, success) => {
 
 export const sendEmail = async (to, subject, text, html) => {
     const info = await transporter.sendMail({
-        from: `"StackTrace" <${process.env.EMAIL_USER}>`,
+        from: `${process.env.EMAIL_SENDER_NAME} <${process.env.EMAIL_SENDER_MAIL}>`,
         to,
         subject,
         text,
